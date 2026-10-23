@@ -2,6 +2,7 @@ packages:
   - "packages/*"
 
 catalog:
+  "@azure/storage-blob": 12.28.0
   "@types/node": 24.13.4
   eslint: 10.10.0
   prettier: 3.9.6

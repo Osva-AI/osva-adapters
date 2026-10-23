@@ -16,4 +16,10 @@ This repository applies a **pnpm patch** (`patches/@osva-ai__contracts@1.1.0-rc.
 
 ## Adapter semver
 
-`@osva-ai/adapter-artifact-memory` `0.1.x` tracks the reference A1.1 slice. Breaking contract changes require a major bump on `@osva-ai/contracts` and a corresponding adapter release.
+`@osva-ai/adapter-artifact-memory` `0.1.x` tracks the reference A1.1 slice. `@osva-ai/adapter-artifact-azure` `0.1.x` tracks the A1.2 slice. Breaking contract changes require a major bump on `@osva-ai/contracts` and a corresponding adapter release.
+
+## A1.2 Azure dependencies
+
+| Package               | Version (catalog) | Notes                            |
+| --------------------- | ----------------- | -------------------------------- |
+| `@azure/storage-blob` | `12.28.0`         | Official Azure Blob SDK for Node |
