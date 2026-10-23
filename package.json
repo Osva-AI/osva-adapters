@@ -1,0 +1,28 @@
+{
+  "name": "osva-adapters",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@12.4.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:pack-consumer": "node scripts/acceptance/a1-1-pack-consumer.mjs",
+    "verify:a1-1": "pnpm format && pnpm format:check && pnpm --filter @osva-ai/adapter-artifact-memory lint && pnpm --filter @osva-ai/adapter-artifact-memory typecheck && pnpm --filter @osva-ai/adapter-artifact-memory build && pnpm --filter @osva-ai/adapter-artifact-memory test"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vitest": "catalog:"
+  }
+}

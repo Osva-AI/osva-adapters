@@ -1,0 +1,44 @@
+{
+  "name": "@osva-ai/adapter-artifact-memory",
+  "version": "0.1.0",
+  "description": "Reference in-memory ArtifactBlobStore adapter for OSVA (non-durable, process-local)",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Osva-AI/osva-adapters.git",
+    "directory": "packages/artifact-memory"
+  },
+  "homepage": "https://github.com/Osva-AI/osva-adapters/tree/main/packages/artifact-memory",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@osva-ai/contracts": "1.1.0-rc.2"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

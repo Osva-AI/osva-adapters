@@ -1,0 +1,157 @@
+diff --git a/dist/artifact-blob-store.d.ts b/dist/artifact-blob-store.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..7fb15d18eb6793b742fc0473663ea3aa9e9e1247
+--- /dev/null
++++ b/dist/artifact-blob-store.d.ts
+@@ -0,0 +1,39 @@
++/**
++ * Public infrastructure port for opaque artifact byte storage.
++ *
++ * Implementations live outside OSVA core (for example in osva-adapters).
++ * Metadata and lifecycle authority remain in OSVA PostgreSQL.
++ *
++ * Semver: treat this surface as stable within `@osva-ai/contracts` major lines.
++ * Digest values use the `sha256:` prefix from trusted-runtime helpers.
++ *
++ * Streams intentionally avoid Node.js `Readable` types so `@osva-ai/contracts`
++ * stays environment-portable at the type level. Node adapters typically pass
++ * a `Readable`, which satisfies {@link ArtifactBlobContentStream}.
++ */
++export interface ArtifactBlobContentStream {
++  [Symbol.asyncIterator](): AsyncIterator<Uint8Array>;
++}
++
++export interface ArtifactBlobWriteInput {
++  readonly key: string;
++  readonly content: ArtifactBlobContentStream;
++  readonly maxBytes: number;
++  readonly expectedDigest?: string;
++}
++
++export interface ArtifactBlobWriteResult {
++  readonly sizeBytes: number;
++  readonly digest: string;
++}
++
++export interface ArtifactBlobReadHandle {
++  readonly sizeBytes: number;
++  readonly stream: ArtifactBlobContentStream;
++}
++
++export interface ArtifactBlobStore {
++  write(input: ArtifactBlobWriteInput): Promise<ArtifactBlobWriteResult>;
++  open(key: string): Promise<ArtifactBlobReadHandle>;
++  delete(key: string): Promise<void>;
++}
+diff --git a/dist/artifact-blob-store.js b/dist/artifact-blob-store.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..cb0ff5c3b541f646105198ee23ac0fc3d805023e
+--- /dev/null
++++ b/dist/artifact-blob-store.js
+@@ -0,0 +1 @@
++export {};
+diff --git a/dist/artifact-storage-config.d.ts b/dist/artifact-storage-config.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..f29a67315e19df6373c3b84c3d1266438cd4a7e8
+--- /dev/null
++++ b/dist/artifact-storage-config.d.ts
+@@ -0,0 +1,57 @@
++import type { ArtifactBlobStore } from "./artifact-blob-store.js";
++
++export declare const ARTIFACT_STORAGE_DRIVER_FILESYSTEM: "filesystem";
++export declare const ARTIFACT_STORAGE_DRIVER_S3: "s3";
++export declare const ARTIFACT_STORAGE_DRIVER_REGISTERED: "registered";
++export declare const ARTIFACT_STORAGE_DRIVERS: readonly [
++  "filesystem",
++  "s3",
++  "registered",
++];
++export type ArtifactStorageDriver = (typeof ARTIFACT_STORAGE_DRIVERS)[number];
++export declare const DEFAULT_ARTIFACT_FILESYSTEM_ROOT: ".osva/artifacts";
++export declare const DEFAULT_ARTIFACT_MAX_BYTES: 67108864;
++
++export interface ArtifactStorageConfigFilesystem {
++  readonly driver: typeof ARTIFACT_STORAGE_DRIVER_FILESYSTEM;
++  readonly filesystemRoot: string;
++  readonly maxBytes: number;
++}
++
++export interface ArtifactStorageConfigS3 {
++  readonly driver: typeof ARTIFACT_STORAGE_DRIVER_S3;
++  readonly maxBytes: number;
++  readonly bucket: string;
++  readonly region: string;
++  readonly endpoint?: string;
++  readonly accessKeyId?: string;
++  readonly secretAccessKey?: string;
++  readonly forcePathStyle: boolean;
++}
++
++/**
++ * Trusted-operator registration: `registerModule` must resolve to an
++ * independently installed package that exports `createArtifactBlobStore`.
++ * OSVA does not discover or download adapter packages automatically.
++ */
++export interface ArtifactStorageConfigRegistered {
++  readonly driver: typeof ARTIFACT_STORAGE_DRIVER_REGISTERED;
++  readonly maxBytes: number;
++  readonly registerModule: string;
++}
++
++export type ArtifactStorageConfig =
++  | ArtifactStorageConfigFilesystem
++  | ArtifactStorageConfigS3
++  | ArtifactStorageConfigRegistered;
++
++export type RegisteredArtifactBlobStoreFactory = (
++  config: ArtifactStorageConfigRegistered,
++) => ArtifactBlobStore | Promise<ArtifactBlobStore>;
++
++/**
++ * Module shape for `OSVA_ARTIFACT_BLOB_STORE_REGISTER_MODULE`.
++ */
++export interface RegisteredArtifactBlobStoreModule {
++  createArtifactBlobStore: RegisteredArtifactBlobStoreFactory;
++}
+diff --git a/dist/artifact-storage-config.js b/dist/artifact-storage-config.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..0c22d8a54b5b4f184184aa13b4fe035cdcac46e6
+--- /dev/null
++++ b/dist/artifact-storage-config.js
+@@ -0,0 +1,10 @@
++export const ARTIFACT_STORAGE_DRIVER_FILESYSTEM = "filesystem";
++export const ARTIFACT_STORAGE_DRIVER_S3 = "s3";
++export const ARTIFACT_STORAGE_DRIVER_REGISTERED = "registered";
++export const ARTIFACT_STORAGE_DRIVERS = [
++  ARTIFACT_STORAGE_DRIVER_FILESYSTEM,
++  ARTIFACT_STORAGE_DRIVER_S3,
++  ARTIFACT_STORAGE_DRIVER_REGISTERED,
++];
++export const DEFAULT_ARTIFACT_FILESYSTEM_ROOT = ".osva/artifacts";
++export const DEFAULT_ARTIFACT_MAX_BYTES = 67_108_864;
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index cf6e66d726a84a9be67248c11b8884efd8a4579a..581c8e6d86eda70e714b11756077e047f64ec36e 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
+@@ -30,6 +30,9 @@ export { SHA256_INTEGRITY_PREFIX, isRelativeTrustedEntrypoint, isSha256Integrity
+ export { ARTIFACT_IDEMPOTENCY_KEY_MAX_LENGTH, ARTIFACT_MEDIA_TYPE_MAX_LENGTH, ARTIFACT_METADATA_MAX_SERIALIZED_BYTES, ARTIFACT_NAME_MAX_LENGTH, ARTIFACT_REFERENCE_TYPE, type ArtifactReferenceV1, } from "./artifact.js";
+ export { ARTIFACT_ERROR_CODES, isArtifactErrorCode, } from "./artifact-gateway.js";
+ export type { ArtifactErrorCode } from "./artifact-gateway.js";
++export type { ArtifactBlobContentStream, ArtifactBlobReadHandle, ArtifactBlobStore, ArtifactBlobWriteInput, ArtifactBlobWriteResult, } from "./artifact-blob-store.js";
++export { ARTIFACT_STORAGE_DRIVER_FILESYSTEM, ARTIFACT_STORAGE_DRIVER_REGISTERED, ARTIFACT_STORAGE_DRIVER_S3, ARTIFACT_STORAGE_DRIVERS, DEFAULT_ARTIFACT_FILESYSTEM_ROOT, DEFAULT_ARTIFACT_MAX_BYTES, } from "./artifact-storage-config.js";
++export type { ArtifactStorageConfig, ArtifactStorageConfigFilesystem, ArtifactStorageConfigRegistered, ArtifactStorageConfigS3, ArtifactStorageDriver, RegisteredArtifactBlobStoreFactory, RegisteredArtifactBlobStoreModule, } from "./artifact-storage-config.js";
+ export { KNOWLEDGE_ATTRIBUTES_MAX_SERIALIZED_BYTES, KNOWLEDGE_CHUNK_TEXT_MAX_BYTES, KNOWLEDGE_LOCATION_MAX_SERIALIZED_BYTES, KNOWLEDGE_MAX_EXTRACTED_BYTES, KNOWLEDGE_MAX_SOURCE_BYTES, KNOWLEDGE_MAX_TEXT_SEGMENTS, KNOWLEDGE_CHUNKER_KEY_RECURSIVE_TEXT, KNOWLEDGE_CHUNKER_VERSION_RECURSIVE_TEXT, KNOWLEDGE_DEFAULT_CHUNK_OVERLAP_CHARS, KNOWLEDGE_DEFAULT_CHUNK_SIZE_CHARS, KNOWLEDGE_DISTANCE_METRICS, KNOWLEDGE_ERROR_CODES, KNOWLEDGE_EXTRACTION_MEDIA_TYPE, KNOWLEDGE_IDEMPOTENCY_KEY_MAX_LENGTH, KNOWLEDGE_INDEX_STATES, KNOWLEDGE_MAX_CHUNKS_PER_INDEX, KNOWLEDGE_MAX_FILTER_KEYS, KNOWLEDGE_MAX_INDEX_IDS_PER_RETRIEVE, KNOWLEDGE_MAX_QUERY_LENGTH, KNOWLEDGE_MAX_TOP_K, KNOWLEDGE_PARSER_KEY_OSVA_NATIVE, KNOWLEDGE_PARSER_VERSION_OSVA_NATIVE, KNOWLEDGE_SOURCE_KEY_MAX_LENGTH, KNOWLEDGE_SOURCE_NAME_MAX_LENGTH, isKnowledgeDistanceMetric, isKnowledgeErrorCode, isKnowledgeIndexState, } from "./knowledge.js";
+ export type { KnowledgeChunkLocationV1, KnowledgeDistanceMetric, KnowledgeErrorCode, KnowledgeHitV1, KnowledgeIndexResourceV1, KnowledgeIndexState, KnowledgeSourceResourceV1, KnowledgeTextSegmentV1, } from "./knowledge.js";
+ export type { CreateKnowledgeIndexRequestV1, CreateKnowledgeSourceRequestV1, KnowledgeIndexListResourceV1, KnowledgeSourceListResourceV1, ListKnowledgeIndexesQueryV1, ListKnowledgeSourcesQueryV1, RetryKnowledgeIndexRequestV1, } from "./knowledge-registry.js";
+diff --git a/dist/index.js b/dist/index.js
+index fc9e2abe7dc67808a27795a866529bc6bc57648e..a27695db132e4ef3367c5e3add12b5cfd5db1e8d 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -13,6 +13,7 @@ export { REMOTE_RUNTIME_ENDPOINT_MAX_LENGTH, isAllowedRemoteRuntimeEndpoint, } f
+ export { SHA256_INTEGRITY_PREFIX, isRelativeTrustedEntrypoint, isSha256IntegrityDigest, sha256IntegrityHex, } from "./trusted-runtime.js";
+ export { ARTIFACT_IDEMPOTENCY_KEY_MAX_LENGTH, ARTIFACT_MEDIA_TYPE_MAX_LENGTH, ARTIFACT_METADATA_MAX_SERIALIZED_BYTES, ARTIFACT_NAME_MAX_LENGTH, ARTIFACT_REFERENCE_TYPE, } from "./artifact.js";
+ export { ARTIFACT_ERROR_CODES, isArtifactErrorCode, } from "./artifact-gateway.js";
++export { ARTIFACT_STORAGE_DRIVER_FILESYSTEM, ARTIFACT_STORAGE_DRIVER_REGISTERED, ARTIFACT_STORAGE_DRIVER_S3, ARTIFACT_STORAGE_DRIVERS, DEFAULT_ARTIFACT_FILESYSTEM_ROOT, DEFAULT_ARTIFACT_MAX_BYTES, } from "./artifact-storage-config.js";
+ export { KNOWLEDGE_ATTRIBUTES_MAX_SERIALIZED_BYTES, KNOWLEDGE_CHUNK_TEXT_MAX_BYTES, KNOWLEDGE_LOCATION_MAX_SERIALIZED_BYTES, KNOWLEDGE_MAX_EXTRACTED_BYTES, KNOWLEDGE_MAX_SOURCE_BYTES, KNOWLEDGE_MAX_TEXT_SEGMENTS, KNOWLEDGE_CHUNKER_KEY_RECURSIVE_TEXT, KNOWLEDGE_CHUNKER_VERSION_RECURSIVE_TEXT, KNOWLEDGE_DEFAULT_CHUNK_OVERLAP_CHARS, KNOWLEDGE_DEFAULT_CHUNK_SIZE_CHARS, KNOWLEDGE_DISTANCE_METRICS, KNOWLEDGE_ERROR_CODES, KNOWLEDGE_EXTRACTION_MEDIA_TYPE, KNOWLEDGE_IDEMPOTENCY_KEY_MAX_LENGTH, KNOWLEDGE_INDEX_STATES, KNOWLEDGE_MAX_CHUNKS_PER_INDEX, KNOWLEDGE_MAX_FILTER_KEYS, KNOWLEDGE_MAX_INDEX_IDS_PER_RETRIEVE, KNOWLEDGE_MAX_QUERY_LENGTH, KNOWLEDGE_MAX_TOP_K, KNOWLEDGE_PARSER_KEY_OSVA_NATIVE, KNOWLEDGE_PARSER_VERSION_OSVA_NATIVE, KNOWLEDGE_SOURCE_KEY_MAX_LENGTH, KNOWLEDGE_SOURCE_NAME_MAX_LENGTH, isKnowledgeDistanceMetric, isKnowledgeErrorCode, isKnowledgeIndexState, } from "./knowledge.js";
+ export { KNOWLEDGE_BINDING_NAME_PATTERN, KNOWLEDGE_MAX_INDEX_IDS_PER_BINDING, KNOWLEDGE_MAX_MANIFEST_BINDINGS, isKnowledgeBindingName, } from "./knowledge-runtime.js";
+ export { MEMORY_ACCESS_MODES, MEMORY_BINDING_NAME_PATTERN, MEMORY_ERROR_CODES, isMemoryAccessMode, isMemoryBindingName, isMemoryErrorCode, } from "./memory-gateway.js";
