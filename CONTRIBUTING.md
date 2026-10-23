@@ -14,7 +14,8 @@ Requirements: Node.js `>=24`, pnpm `12.x`.
 
 ```bash
 pnpm install
-pnpm --filter @osva-ai/adapter-artifact-memory verify
+pnpm --filter @osva-ai/adapter-artifact-memory build
+pnpm --filter @osva-ai/adapter-artifact-azure build
 ```
 
 Use `pnpm format` before opening a PR.
