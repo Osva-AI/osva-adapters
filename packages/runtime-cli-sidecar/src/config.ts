@@ -1,5 +1,9 @@
 import os from "node:os";
 import path from "node:path";
+import {
+  loadCliProviderKindFromEnv,
+  mergeEnvAllowlistForProvider,
+} from "./providers/create-cli-provider.js";
 import type { SidecarConfig } from "./types.js";
 
 const DEFAULT_ENV_ALLOWLIST = [
@@ -30,6 +34,9 @@ export function loadSidecarConfigFromEnv(
     process.env.OSVA_SIDECAR_WORKSPACE_ROOT ??
     path.join(os.tmpdir(), "osva-cli-sidecar-workspace");
 
+  const cliProvider = overrides.cliProvider ?? loadCliProviderKindFromEnv();
+  const baseEnvAllowlist = overrides.envAllowlist ?? DEFAULT_ENV_ALLOWLIST;
+
   return {
     host,
     port,
@@ -59,7 +66,28 @@ export function loadSidecarConfigFromEnv(
         10,
       ),
     workspaceRoot,
-    envAllowlist: overrides.envAllowlist ?? DEFAULT_ENV_ALLOWLIST,
+    envAllowlist: mergeEnvAllowlistForProvider(baseEnvAllowlist, cliProvider),
+    cliProvider,
+    ...(overrides.geminiCommand !== undefined
+      ? { geminiCommand: overrides.geminiCommand }
+      : process.env.OSVA_SIDECAR_GEMINI_BINARY !== undefined
+        ? { geminiCommand: process.env.OSVA_SIDECAR_GEMINI_BINARY }
+        : {}),
+    ...(overrides.codexCommand !== undefined
+      ? { codexCommand: overrides.codexCommand }
+      : process.env.OSVA_SIDECAR_CODEX_BINARY !== undefined
+        ? { codexCommand: process.env.OSVA_SIDECAR_CODEX_BINARY }
+        : {}),
+    ...(overrides.claudeCommand !== undefined
+      ? { claudeCommand: overrides.claudeCommand }
+      : process.env.OSVA_SIDECAR_CLAUDE_BINARY !== undefined
+        ? { claudeCommand: process.env.OSVA_SIDECAR_CLAUDE_BINARY }
+        : {}),
+    ...(overrides.fixtureScriptPath !== undefined
+      ? { fixtureScriptPath: overrides.fixtureScriptPath }
+      : process.env.OSVA_SIDECAR_FIXTURE_SCRIPT !== undefined
+        ? { fixtureScriptPath: process.env.OSVA_SIDECAR_FIXTURE_SCRIPT }
+        : {}),
     completedCacheMaxEntries:
       overrides.completedCacheMaxEntries ??
       Number.parseInt(

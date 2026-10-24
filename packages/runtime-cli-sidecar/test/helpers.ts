@@ -24,6 +24,7 @@ export function createTestConfig(
     completedCacheMaxEntries: 128,
     completedCacheTtlMs: 60_000,
     draining: false,
+    cliProvider: "fixture",
     ...overrides,
   };
 }

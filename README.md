@@ -14,11 +14,11 @@ Provide production-oriented and reference implementations of OSVA infrastructure
 | ---------------------------------------------------------------- | ------------------ | --------------------------------------------------------- |
 | [`@osva-ai/adapter-artifact-memory`](./packages/artifact-memory) | **A1.1 reference** | Process-local in-memory `ArtifactBlobStore` (non-durable) |
 | [`@osva-ai/adapter-artifact-azure`](./packages/artifact-azure)   | **A1.2**           | Azure Blob Storage backend (operator credentials)         |
-| [`@osva-ai/runtime-cli-sidecar`](./packages/runtime-cli-sidecar) | **A2.1**           | Runtime Protocol V1 HTTP sidecar for CLI agent runtimes   |
+| [`@osva-ai/runtime-cli-sidecar`](./packages/runtime-cli-sidecar) | **A2.1–A2.4**      | Runtime Protocol V1 sidecar + Gemini / Codex / Claude CLI |
 
 Both artifact adapters are **release-prepared (A1.5)** for independent npm publication at `0.1.0`; publication is manual via GitHub Actions ([maintainer guide](./docs/release/MAINTAINER_RELEASE.md)).
 
-Vendor CLI backends (Codex, Claude Code, Gemini CLI) are **planned (A2.2+)** on top of the A2.1 sidecar foundation.
+Gemini CLI, Codex CLI, and Claude Code backends ship in `@osva-ai/runtime-cli-sidecar` (select via `OSVA_SIDECAR_CLI_PROVIDER`). Live vendor credentials are operator-managed; default CI uses hermetic CLI fixtures.
 
 ## Quickstart (A1.1 memory reference)
 

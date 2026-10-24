@@ -21,7 +21,7 @@ OSVA worker (RemoteHttpRuntimeAdapter)
     |  ExecutionRegistry (dedupe + concurrency)
     |  CliExecutionProvider (injectable)
     v
-CLI child process (fixture or vendor adapter in A2.2+)
+CLI child process (fixture or gemini | codex | claude provider)
 ```
 
 ## Public integration surfaces
@@ -57,7 +57,17 @@ CLI child process (fixture or vendor adapter in A2.2+)
 - OSVA human approval bridge to interactive CLI prompts.
 - Worker workspace bind-mount contract for sidecar cwd (operator supplies `OSVA_SIDECAR_WORKSPACE_ROOT`).
 
-## A2.2+ dependencies
+## Provider selection (A2.2–A2.4)
 
-Vendor backends implement `CliExecutionProvider` with allowlisted binaries and sandbox flags.
-A2.5 adds cross-runtime acceptance against a live OSVA REMOTE_HTTP agent when operator network policy allows.
+| Env                         | Values                                           |
+| --------------------------- | ------------------------------------------------ |
+| `OSVA_SIDECAR_CLI_PROVIDER` | `fixture` (default), `gemini`, `codex`, `claude` |
+
+Factory: `createCliProviderFromSidecarConfig()` / `createCliProvider()`.
+Vendor adapters live under `src/providers/{gemini,codex,claude}-provider.ts`.
+
+See adapter docs: [GEMINI_CLI_ADAPTER.md](./GEMINI_CLI_ADAPTER.md), [CODEX_CLI_ADAPTER.md](./CODEX_CLI_ADAPTER.md), [CLAUDE_CLI_ADAPTER.md](./CLAUDE_CLI_ADAPTER.md), [CLI_PROVIDER_CONFORMANCE.md](./CLI_PROVIDER_CONFORMANCE.md).
+
+## A2.5 dependencies
+
+Cross-runtime deployment acceptance (Compose + OSVA worker + sidecar image) remains A2.5.
