@@ -14,9 +14,11 @@ Provide production-oriented and reference implementations of OSVA infrastructure
 | ---------------------------------------------------------------- | ------------------ | --------------------------------------------------------- |
 | [`@osva-ai/adapter-artifact-memory`](./packages/artifact-memory) | **A1.1 reference** | Process-local in-memory `ArtifactBlobStore` (non-durable) |
 | [`@osva-ai/adapter-artifact-azure`](./packages/artifact-azure)   | **A1.2**           | Azure Blob Storage backend (operator credentials)         |
+| [`@osva-ai/runtime-cli-sidecar`](./packages/runtime-cli-sidecar) | **A2.1**           | Runtime Protocol V1 HTTP sidecar for CLI agent runtimes   |
 
 Both artifact adapters are **release-prepared (A1.5)** for independent npm publication at `0.1.0`; publication is manual via GitHub Actions ([maintainer guide](./docs/release/MAINTAINER_RELEASE.md)).
-| External agent CLI runtimes (Codex, Claude Code, Gemini CLI, …) | Planned | Not in scope for A1.1 |
+
+Vendor CLI backends (Codex, Claude Code, Gemini CLI) are **planned (A2.2+)** on top of the A2.1 sidecar foundation.
 
 ## Quickstart (A1.1 memory reference)
 
@@ -78,6 +80,7 @@ Does not publish to npm. See [scripts/acceptance/a1-5/README.md](./scripts/accep
 pnpm verify:a1-1
 pnpm verify:a1-2
 pnpm verify:a1-5
+pnpm verify:a2-1
 # Docker + OSVA RC3 source required:
 pnpm verify:a1-4
 ```

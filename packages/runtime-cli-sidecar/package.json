@@ -1,0 +1,53 @@
+{
+  "name": "@osva-ai/runtime-cli-sidecar",
+  "version": "0.1.0",
+  "description": "Vendor-neutral HTTP sidecar for executing CLI agents via OSVA Runtime Protocol V1",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Osva-AI/osva-adapters.git",
+    "directory": "packages/runtime-cli-sidecar"
+  },
+  "homepage": "https://github.com/Osva-AI/osva-adapters/tree/main/packages/runtime-cli-sidecar",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./fixture-cli": {
+      "import": "./fixtures/osva-fixture-cli.mjs"
+    }
+  },
+  "bin": {
+    "osva-runtime-cli-sidecar": "./dist/bin/start-sidecar.js"
+  },
+  "files": [
+    "dist",
+    "fixtures",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@osva-ai/contracts": "1.1.0-rc.3",
+    "@osva-ai/runtime-protocol": "1.1.0-rc.3",
+    "@osva-ai/sdk": "1.1.0-rc.3"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

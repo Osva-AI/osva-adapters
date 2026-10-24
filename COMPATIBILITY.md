@@ -2,11 +2,13 @@
 
 ## Tested against
 
-| Component             | Version                 | Notes                                                                                   |
-| --------------------- | ----------------------- | --------------------------------------------------------------------------------------- |
-| `@osva-ai/contracts`  | `1.1.0-rc.3` (declared) | Official npm `rc` dist-tag; includes M12.4.3 artifact blob store and registration types |
-| OSVA core (reference) | `1.1.0-rc.3`            | [Osva-AI/osva](https://github.com/Osva-AI/osva) RC3 line (commit `744c1bb` and later)   |
-| Node.js               | `>=24`                  | Matches contracts `engines`                                                             |
+| Component                   | Version                 | Notes                                                                                   |
+| --------------------------- | ----------------------- | --------------------------------------------------------------------------------------- |
+| `@osva-ai/contracts`        | `1.1.0-rc.3` (declared) | Official npm `rc` dist-tag; includes M12.4.3 artifact blob store and registration types |
+| OSVA core (reference)       | `1.1.0-rc.3`            | [Osva-AI/osva](https://github.com/Osva-AI/osva) RC3 line (commit `744c1bb` and later)   |
+| Node.js                     | `>=24`                  | Matches contracts `engines`                                                             |
+| `@osva-ai/sdk`              | `1.1.0-rc.3`            | `@osva-ai/runtime-cli-sidecar` runtime HTTP handler                                     |
+| `@osva-ai/runtime-protocol` | `1.1.0-rc.3`            | Runtime Protocol V1 wire schemas for sidecar                                            |
 
 ## npm consumption (A1.3)
 
@@ -30,6 +32,7 @@ Packages are versioned **independently** on npm unless a release note documents 
 | ---------------------------------- | ----------------------------------- | ----------------------- |
 | `@osva-ai/adapter-artifact-memory` | Not published (404)                 | `0.1.0`                 |
 | `@osva-ai/adapter-artifact-azure`  | Not published (404)                 | `0.1.0`                 |
+| `@osva-ai/runtime-cli-sidecar`     | Not published (404)                 | `0.1.0`                 |
 
 Pin adapters with explicit contracts in deployment images:
 

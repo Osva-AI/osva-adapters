@@ -1,20 +1,20 @@
 # Implementation tracker
 
-| ID   | Package                                   | Status               | Notes                                                         |
-| ---- | ----------------------------------------- | -------------------- | ------------------------------------------------------------- |
-| A0   | Repository foundation                     | **Done**             | pnpm workspace, Apache-2.0, ESLint, Prettier, Vitest          |
-| A1.1 | `@osva-ai/adapter-artifact-memory`        | **Done (reference)** | In-memory `ArtifactBlobStore`; not production durable storage |
-| A1.2 | `@osva-ai/adapter-artifact-azure`         | **Done (adapter)**   | Azure Blob `ArtifactBlobStore`; A1.4 deployment harness done  |
-| A1.3 | Contracts RC3 compatibility               | **Done**             | `@osva-ai/contracts@1.1.0-rc.3` from npm; patch removed       |
-| A1.4 | OSVA deployment acceptance (Azure)        | **Done (harness)**   | Docker Compose + Azurite cross-process harness                |
-| A1.5 | npm release preparation                   | **Done (prep)**      | CI, pack inspect, `verify:a1-5`, manual publish workflow      |
-| A2.0 | External agent runtime architecture audit | **Done (docs)**      | See `docs/architecture/EXTERNAL_AGENT_RUNTIME_*.md`           |
-| A2.1 | Minimal reference CLI runtime sidecar     | Planned              | Runtime Protocol V1 sidecar; no vendor CLI in unit tests      |
-| A2.2 | Gemini CLI backend                        | Planned              | First agent by verified headless / JSON feasibility           |
-| A2.3 | Codex CLI backend                         | Planned              | `codex exec --json`                                           |
-| A2.4 | Claude Code backend                       | Planned              | `claude -p` / JSON output                                     |
-| A2.5 | Cross-runtime conformance + acceptance    | Planned              | Extend A1.4-style harness                                     |
-| A2.6 | npm release readiness (runtime adapters)  | Planned              | Mirror A1.5 gates                                             |
+| ID   | Package                                   | Status                | Notes                                                         |
+| ---- | ----------------------------------------- | --------------------- | ------------------------------------------------------------- |
+| A0   | Repository foundation                     | **Done**              | pnpm workspace, Apache-2.0, ESLint, Prettier, Vitest          |
+| A1.1 | `@osva-ai/adapter-artifact-memory`        | **Done (reference)**  | In-memory `ArtifactBlobStore`; not production durable storage |
+| A1.2 | `@osva-ai/adapter-artifact-azure`         | **Done (adapter)**    | Azure Blob `ArtifactBlobStore`; A1.4 deployment harness done  |
+| A1.3 | Contracts RC3 compatibility               | **Done**              | `@osva-ai/contracts@1.1.0-rc.3` from npm; patch removed       |
+| A1.4 | OSVA deployment acceptance (Azure)        | **Done (harness)**    | Docker Compose + Azurite cross-process harness                |
+| A1.5 | npm release preparation                   | **Done (prep)**       | CI, pack inspect, `verify:a1-5`, manual publish workflow      |
+| A2.0 | External agent runtime architecture audit | **Done (docs)**       | See `docs/architecture/EXTERNAL_AGENT_RUNTIME_*.md`           |
+| A2.1 | `@osva-ai/runtime-cli-sidecar`            | **Done (foundation)** | Runtime Protocol V1 sidecar; fixture CLI + pack consumer      |
+| A2.2 | Gemini CLI backend                        | Planned               | First agent by verified headless / JSON feasibility           |
+| A2.3 | Codex CLI backend                         | Planned               | `codex exec --json`                                           |
+| A2.4 | Claude Code backend                       | Planned               | `claude -p` / JSON output                                     |
+| A2.5 | Cross-runtime conformance + acceptance    | Planned               | Extend A1.4-style harness                                     |
+| A2.6 | npm release readiness (runtime adapters)  | Planned               | Mirror A1.5 gates                                             |
 
 ## Verification (A1.1)
 
@@ -62,3 +62,12 @@
 - [x] A2.1–A2.6 roadmap documented
 - [x] `git diff --check` (documentation-only)
 - [ ] Pin CLI versions in docs when A2.2+ implementation starts (deferred)
+
+## Verification (A2.1)
+
+- [x] `@osva-ai/runtime-cli-sidecar` package (SDK runtime handler + injectable CLI provider)
+- [x] Hermetic Vitest (protocol validation, timeout, dedupe, auth, path traversal, redaction)
+- [x] Deterministic fixture CLI subprocess coverage
+- [x] External npm pack consumer (`pnpm test:pack-consumer:a2-1`)
+- [x] Architecture + security docs (`CLI_SIDECAR_DESIGN.md`, `CLI_SIDECAR_SECURITY.md`)
+- [ ] Live OSVA REMOTE_HTTP end-to-end (deferred to A2.5; SSRF/network policy unchanged)
