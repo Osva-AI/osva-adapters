@@ -8,3 +8,6 @@ coverage/
 Thumbs.db
 *.log
 .vitest/
+scripts/acceptance/a1-4/docker/.env
+scripts/acceptance/a1-4/docker/*.tgz
+scripts/acceptance/a1-4/evidence/

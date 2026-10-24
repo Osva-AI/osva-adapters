@@ -48,13 +48,25 @@ export OSVA_ARTIFACT_AZURE_CONTAINER=your-container
 export OSVA_ARTIFACT_AZURE_CONNECTION_STRING="..."
 ```
 
-See [packages/artifact-azure/README.md](./packages/artifact-azure/README.md) for Azurite, semantics, and a Kubernetes example. **Production readiness** still requires OSVA deployment integration and your Azure provisioning review.
+See [packages/artifact-azure/README.md](./packages/artifact-azure/README.md) for Azurite, semantics, and a Kubernetes example.
+
+## Deployment acceptance (A1.4)
+
+Cross-process OSVA + Azurite Compose harness (packed adapter install, web/worker/knowledge-worker):
+
+```bash
+node scripts/acceptance/a1-4/run.mjs
+```
+
+See [scripts/acceptance/a1-4/README.md](./scripts/acceptance/a1-4/README.md) and [docs/acceptance/A1_4_INTEGRATION_DESIGN.md](./docs/acceptance/A1_4_INTEGRATION_DESIGN.md).
 
 ## Development
 
 ```bash
 pnpm verify:a1-1
 pnpm verify:a1-2
+# Docker + OSVA RC3 source required:
+pnpm verify:a1-4
 ```
 
 Adapters declare **`@osva-ai/contracts@1.1.0-rc.3`** from npm (official `rc` dist-tag; no patched contracts).
