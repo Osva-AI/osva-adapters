@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { access } from "node:fs/promises";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -12,6 +11,9 @@ const REPO_ROOT = path.resolve(
 );
 
 const ADAPTER_PACKAGE_DIR = path.join(REPO_ROOT, "packages", "artifact-memory");
+
+/** Official npm release consumed by adapters (unmodified registry tarball). */
+const OFFICIAL_CONTRACTS_VERSION = "1.1.0-rc.3";
 
 function run(command, args, options = {}) {
   const useShell =
@@ -45,19 +47,20 @@ async function packAdapter() {
   return { tgz: path.join(packDir, files[0]), packDir };
 }
 
-async function packContracts() {
-  const packDir = await mkdtemp(path.join(os.tmpdir(), "osva-contracts-pack-"));
-  const contractsRoot = path.join(
-    ADAPTER_PACKAGE_DIR,
-    "node_modules",
-    "@osva-ai",
-    "contracts",
+async function packOfficialContractsFromRegistry() {
+  const packDir = await mkdtemp(
+    path.join(os.tmpdir(), "osva-contracts-registry-pack-"),
   );
-  await access(path.join(contractsRoot, "package.json"));
-  run("npm", ["pack", "--pack-destination", packDir], {
-    cwd: contractsRoot,
-    shell: true,
-  });
+  run(
+    "npm",
+    [
+      "pack",
+      `@osva-ai/contracts@${OFFICIAL_CONTRACTS_VERSION}`,
+      "--pack-destination",
+      packDir,
+    ],
+    { cwd: REPO_ROOT, shell: true },
+  );
   const { readdir } = await import("node:fs/promises");
   const files = (await readdir(packDir)).filter((name) =>
     name.endsWith(".tgz"),
@@ -67,7 +70,25 @@ async function packContracts() {
       `Expected one contracts tarball, found ${files.join(", ")}`,
     );
   }
-  return { tgz: path.join(packDir, files[0]), packDir };
+  const tgz = path.join(packDir, files[0]);
+  const contractsPkg = JSON.parse(
+    await readFile(
+      path.join(
+        ADAPTER_PACKAGE_DIR,
+        "node_modules",
+        "@osva-ai",
+        "contracts",
+        "package.json",
+      ),
+      "utf8",
+    ),
+  );
+  if (contractsPkg.version !== OFFICIAL_CONTRACTS_VERSION) {
+    throw new Error(
+      `Workspace contracts is ${contractsPkg.version}, expected ${OFFICIAL_CONTRACTS_VERSION}`,
+    );
+  }
+  return { tgz, packDir };
 }
 
 async function main() {
@@ -83,7 +104,7 @@ async function main() {
 
     const adapterPacked = await packAdapter();
     adapterPackDir = adapterPacked.packDir;
-    const contractsPacked = await packContracts();
+    const contractsPacked = await packOfficialContractsFromRegistry();
     contractsPackDir = contractsPacked.packDir;
 
     const installRoot = consumerRoot;

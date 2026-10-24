@@ -57,6 +57,8 @@ pnpm verify:a1-1
 pnpm verify:a1-2
 ```
 
+Adapters declare **`@osva-ai/contracts@1.1.0-rc.3`** from npm (official `rc` dist-tag; no patched contracts).
+
 See [CONTRIBUTING.md](./CONTRIBUTING.md), [COMPATIBILITY.md](./COMPATIBILITY.md), and [ENGINEERING_VERIFICATION_PLAYBOOK.md](./ENGINEERING_VERIFICATION_PLAYBOOK.md).
 
 ## License

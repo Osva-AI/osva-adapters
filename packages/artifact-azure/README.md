@@ -6,7 +6,7 @@
 
 ## Registration
 
-Install into the OSVA deployment image alongside `@osva-ai/contracts`, then use the `registered` artifact storage driver:
+Install into the OSVA deployment image alongside **`@osva-ai/contracts@1.1.0-rc.3`** (npm `rc` dist-tag), then use the `registered` artifact storage driver:
 
 ```bash
 export OSVA_ARTIFACT_STORAGE_DRIVER=registered

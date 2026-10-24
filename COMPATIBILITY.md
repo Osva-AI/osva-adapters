@@ -2,17 +2,21 @@
 
 ## Tested against
 
-| Component             | Version                 | Notes                                                                                                       |
-| --------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `@osva-ai/contracts`  | `1.1.0-rc.2` (declared) | Artifact blob port types match [OSVA main](https://github.com/Osva-AI/osva) `packages/contracts` at M12.4.3 |
-| OSVA core (reference) | `1.1.0-rc.2`            | [Osva-AI/osva](https://github.com/Osva-AI/osva) milestone M12.4.3 / M12.4.4 acceptance                      |
-| Node.js               | `>=24`                  | Matches contracts `engines`                                                                                 |
+| Component             | Version                 | Notes                                                                                   |
+| --------------------- | ----------------------- | --------------------------------------------------------------------------------------- |
+| `@osva-ai/contracts`  | `1.1.0-rc.3` (declared) | Official npm `rc` dist-tag; includes M12.4.3 artifact blob store and registration types |
+| OSVA core (reference) | `1.1.0-rc.3`            | [Osva-AI/osva](https://github.com/Osva-AI/osva) RC3 line (commit `744c1bb` and later)   |
+| Node.js               | `>=24`                  | Matches contracts `engines`                                                             |
 
-## npm publication gap (A1.1)
+## npm consumption (A1.3)
 
-The public npm tarball `@osva-ai/contracts@1.1.0-rc.2` **does not yet include** compiled `artifact-blob-store` / `artifact-storage-config` exports (source exists on OSVA main; see M12.4.3 acceptance: public npm publication marked not done).
+Adapters depend on the **unmodified** registry package `@osva-ai/contracts@1.1.0-rc.3`. No pnpm patches or vendored contract copies are used in this repository.
 
-This repository applies a **pnpm patch** (`patches/@osva-ai__contracts@1.1.0-rc.2.patch`) so local development and pack-consumer tests typecheck against the M12.4.3 port surface. Remove the patch after a contracts release that includes those exports.
+Install with the `rc` dist-tag when pinning explicitly:
+
+```bash
+npm install @osva-ai/contracts@rc
+```
 
 ## Adapter semver
 

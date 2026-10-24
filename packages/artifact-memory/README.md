@@ -7,10 +7,10 @@ Reference **A1.1** implementation of `ArtifactBlobStore` backed by a process-loc
 ## Install
 
 ```bash
-npm install @osva-ai/adapter-artifact-memory @osva-ai/contracts
+npm install @osva-ai/adapter-artifact-memory @osva-ai/contracts@rc
 ```
 
-Requires Node.js `>=24`.
+Requires Node.js `>=24`. This adapter is tested against **`@osva-ai/contracts@1.1.0-rc.3`** from npm.
 
 ## Registration
 
