@@ -1,0 +1,25 @@
+# syntax=docker/dockerfile:1
+# Installs a packed @osva-ai/adapter-artifact-azure tarball into the OSVA deployment
+# image so Node can resolve OSVA_ARTIFACT_BLOB_STORE_REGISTER_MODULE from web/worker/knowledge-worker.
+
+ARG OSVA_BASE_IMAGE=osva:1.1.0-rc.3-a14-base
+FROM ${OSVA_BASE_IMAGE}
+
+USER root
+WORKDIR /app
+
+COPY adapter-artifact-azure.tgz /tmp/adapter-artifact-azure.tgz
+
+# Unpack into node_modules without altering the pnpm workspace root / lockfile.
+RUN mkdir -p /tmp/adapter-unpack /app/node_modules/@osva-ai \
+  && tar -xzf /tmp/adapter-artifact-azure.tgz -C /tmp/adapter-unpack \
+  && rm -rf /app/node_modules/@osva-ai/adapter-artifact-azure \
+  && mv /tmp/adapter-unpack/package /app/node_modules/@osva-ai/adapter-artifact-azure \
+  && npm install \
+    --prefix /app/node_modules/@osva-ai/adapter-artifact-azure \
+    --omit=dev \
+    --no-fund \
+    --no-audit \
+  && rm -rf /tmp/adapter-unpack /tmp/adapter-artifact-azure.tgz
+
+USER node

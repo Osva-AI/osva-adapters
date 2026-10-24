@@ -27,3 +27,11 @@ npm install @osva-ai/contracts@rc
 | Package               | Version (catalog) | Notes                            |
 | --------------------- | ----------------- | -------------------------------- |
 | `@azure/storage-blob` | `12.28.0`         | Official Azure Blob SDK for Node |
+
+## A1.4 deployment acceptance
+
+| Component             | Version / source                          | Notes                                                                  |
+| --------------------- | ----------------------------------------- | ---------------------------------------------------------------------- |
+| OSVA deployment image | `v1.1.0-rc.3` git tag                     | GHCR `1.1.0-rc.3` used when manifest exists; else local `docker build` |
+| Azurite               | `mcr.microsoft.com/azure-storage/azurite` | Test-only devstore credentials in harness `.env.example`               |
+| Acceptance runner     | `scripts/acceptance/a1-4/run.mjs`         | Does not modify OSVA core; evidence → `evidence/latest.json`           |

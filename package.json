@@ -17,7 +17,9 @@
     "test:pack-consumer": "node scripts/acceptance/a1-1-pack-consumer.mjs",
     "test:pack-consumer:a1-2": "node scripts/acceptance/a1-2-pack-consumer.mjs",
     "verify:a1-1": "pnpm format && pnpm format:check && pnpm --filter @osva-ai/adapter-artifact-memory lint && pnpm --filter @osva-ai/adapter-artifact-memory typecheck && pnpm --filter @osva-ai/adapter-artifact-memory build && pnpm --filter @osva-ai/adapter-artifact-memory test",
-    "verify:a1-2": "pnpm format && pnpm format:check && pnpm --filter @osva-ai/adapter-artifact-azure lint && pnpm --filter @osva-ai/adapter-artifact-azure typecheck && pnpm --filter @osva-ai/adapter-artifact-azure build && pnpm --filter @osva-ai/adapter-artifact-azure test && pnpm test:pack-consumer:a1-2"
+    "verify:a1-2": "pnpm format && pnpm format:check && pnpm --filter @osva-ai/adapter-artifact-azure lint && pnpm --filter @osva-ai/adapter-artifact-azure typecheck && pnpm --filter @osva-ai/adapter-artifact-azure build && pnpm --filter @osva-ai/adapter-artifact-azure test && pnpm test:pack-consumer:a1-2",
+    "test:acceptance:a1-4": "node scripts/acceptance/a1-4/run.mjs",
+    "verify:a1-4": "pnpm format && pnpm format:check && pnpm --filter @osva-ai/adapter-artifact-azure lint && pnpm --filter @osva-ai/adapter-artifact-azure typecheck && pnpm --filter @osva-ai/adapter-artifact-azure build && pnpm --filter @osva-ai/adapter-artifact-azure test && pnpm test:acceptance:a1-4"
   },
   "devDependencies": {
     "@types/node": "catalog:",
