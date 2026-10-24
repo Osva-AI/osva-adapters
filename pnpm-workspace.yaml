@@ -10,5 +10,5 @@ catalog:
   typescript-eslint: 8.70.0
   vitest: 5.0.0
 
-patchedDependencies:
-  "@osva-ai/contracts@1.1.0-rc.2": patches/@osva-ai__contracts@1.1.0-rc.2.patch
+minimumReleaseAgeExclude:
+  - "@osva-ai/contracts@1.1.0-rc.3"

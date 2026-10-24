@@ -33,7 +33,7 @@
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
-    "@osva-ai/contracts": "1.1.0-rc.2"
+    "@osva-ai/contracts": "1.1.0-rc.3"
   },
   "devDependencies": {
     "@types/node": "catalog:",

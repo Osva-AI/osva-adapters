@@ -6,7 +6,7 @@ Use this checklist when landing adapter slices in **osva-adapters**. It mirrors 
 
 - List new/changed packages, scripts, docs, and lockfile/catalog updates.
 - Confirm scope stays within public `@osva-ai/contracts` ports (no OSVA core imports).
-- Note compatibility blockers (npm contracts gap, patch requirements).
+- Note compatibility blockers (registry `@osva-ai/contracts` version, required public exports).
 
 ## 2. Formatting
 
