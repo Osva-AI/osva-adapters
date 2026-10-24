@@ -14,7 +14,9 @@ Provide production-oriented and reference implementations of OSVA infrastructure
 | ---------------------------------------------------------------- | ------------------ | --------------------------------------------------------- |
 | [`@osva-ai/adapter-artifact-memory`](./packages/artifact-memory) | **A1.1 reference** | Process-local in-memory `ArtifactBlobStore` (non-durable) |
 | [`@osva-ai/adapter-artifact-azure`](./packages/artifact-azure)   | **A1.2**           | Azure Blob Storage backend (operator credentials)         |
-| External agent CLI runtimes (Codex, Claude Code, Gemini CLI, …)  | Planned            | Not in scope for A1.1                                     |
+
+Both artifact adapters are **release-prepared (A1.5)** for independent npm publication at `0.1.0`; publication is manual via GitHub Actions ([maintainer guide](./docs/release/MAINTAINER_RELEASE.md)).
+| External agent CLI runtimes (Codex, Claude Code, Gemini CLI, …) | Planned | Not in scope for A1.1 |
 
 ## Quickstart (A1.1 memory reference)
 
@@ -60,11 +62,22 @@ node scripts/acceptance/a1-4/run.mjs
 
 See [scripts/acceptance/a1-4/README.md](./scripts/acceptance/a1-4/README.md) and [docs/acceptance/A1_4_INTEGRATION_DESIGN.md](./docs/acceptance/A1_4_INTEGRATION_DESIGN.md).
 
+## Release readiness (A1.5)
+
+Prepublication verification (pack, tarball inspect, external npm consumer, registration exports):
+
+```bash
+pnpm verify:a1-5
+```
+
+Does not publish to npm. See [scripts/acceptance/a1-5/README.md](./scripts/acceptance/a1-5/README.md).
+
 ## Development
 
 ```bash
 pnpm verify:a1-1
 pnpm verify:a1-2
+pnpm verify:a1-5
 # Docker + OSVA RC3 source required:
 pnpm verify:a1-4
 ```

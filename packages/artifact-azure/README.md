@@ -60,6 +60,13 @@ Aligned with [artifact adapter architecture](../../docs/architecture/ARTIFACT_AD
 - **Streaming:** bounded upload buffer (4 MiB); digest computed while streaming.
 - **Errors:** Azure messages are sanitized before surfacing (no account keys or signatures in logs/errors).
 
+## Known limitations (Azure / Azurite)
+
+- **Staging + copy:** writes land in a pending blob (`.__osva_pending.<uuid>`) and copy to the final key; copy must report success before `write` returns.
+- **Cleanup:** pending blob deletion is best-effort in `finally` (failures are not propagated after a successful copy).
+- **Concurrency:** concurrent writes to the same key are not serialized; last successful copy wins (Azure last-writer-wins).
+- **Azurite vs production:** local Azurite and A1.4 Docker acceptance prove registered-driver wiring and cross-process behavior against an emulator — not Azure SLA, IAM edge cases, or private-link-only endpoints.
+
 ## Local development (Azurite)
 
 ```bash
@@ -69,6 +76,14 @@ export OSVA_ARTIFACT_AZURE_CONTAINER=osva-artifacts-dev
 export OSVA_ARTIFACT_AZURE_CONNECTION_STRING="DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
 pnpm --filter @osva-ai/adapter-artifact-azure test:integration
 ```
+
+## Install (npm)
+
+```bash
+npm install @osva-ai/adapter-artifact-azure @osva-ai/contracts@1.1.0-rc.3
+```
+
+Requires Node.js `>=24`. See [COMPATIBILITY.md](../../COMPATIBILITY.md) and [MAINTAINER_RELEASE.md](../../docs/release/MAINTAINER_RELEASE.md) for release pinning.
 
 ## Errors
 

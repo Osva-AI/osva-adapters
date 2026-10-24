@@ -24,6 +24,7 @@ Use `pnpm format` before opening a PR.
 
 - Unit tests: Vitest under each package.
 - Pack consumer: `pnpm test:pack-consumer` (clean temp directory outside the workspace).
+- Release readiness (prepublication): `pnpm verify:a1-5` (see [docs/release/MAINTAINER_RELEASE.md](./docs/release/MAINTAINER_RELEASE.md)).
 
 ## Pull requests
 
