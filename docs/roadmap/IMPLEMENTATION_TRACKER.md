@@ -1,14 +1,20 @@
 # Implementation tracker
 
-| ID   | Package                            | Status               | Notes                                                         |
-| ---- | ---------------------------------- | -------------------- | ------------------------------------------------------------- |
-| A0   | Repository foundation              | **Done**             | pnpm workspace, Apache-2.0, ESLint, Prettier, Vitest          |
-| A1.1 | `@osva-ai/adapter-artifact-memory` | **Done (reference)** | In-memory `ArtifactBlobStore`; not production durable storage |
-| A1.2 | `@osva-ai/adapter-artifact-azure`  | **Done (adapter)**   | Azure Blob `ArtifactBlobStore`; A1.4 deployment harness done  |
-| A1.3 | Contracts RC3 compatibility        | **Done**             | `@osva-ai/contracts@1.1.0-rc.3` from npm; patch removed       |
-| A1.4 | OSVA deployment acceptance (Azure) | **Done (harness)**   | Docker Compose + Azurite cross-process harness                |
-| A1.5 | npm release preparation            | **Done (prep)**      | CI, pack inspect, `verify:a1-5`, manual publish workflow      |
-| A2.x | External agent CLI runtimes        | Planned              | Codex, Claude Code, Gemini CLI—out of A1.1 scope              |
+| ID   | Package                                   | Status               | Notes                                                         |
+| ---- | ----------------------------------------- | -------------------- | ------------------------------------------------------------- |
+| A0   | Repository foundation                     | **Done**             | pnpm workspace, Apache-2.0, ESLint, Prettier, Vitest          |
+| A1.1 | `@osva-ai/adapter-artifact-memory`        | **Done (reference)** | In-memory `ArtifactBlobStore`; not production durable storage |
+| A1.2 | `@osva-ai/adapter-artifact-azure`         | **Done (adapter)**   | Azure Blob `ArtifactBlobStore`; A1.4 deployment harness done  |
+| A1.3 | Contracts RC3 compatibility               | **Done**             | `@osva-ai/contracts@1.1.0-rc.3` from npm; patch removed       |
+| A1.4 | OSVA deployment acceptance (Azure)        | **Done (harness)**   | Docker Compose + Azurite cross-process harness                |
+| A1.5 | npm release preparation                   | **Done (prep)**      | CI, pack inspect, `verify:a1-5`, manual publish workflow      |
+| A2.0 | External agent runtime architecture audit | **Done (docs)**      | See `docs/architecture/EXTERNAL_AGENT_RUNTIME_*.md`           |
+| A2.1 | Minimal reference CLI runtime sidecar     | Planned              | Runtime Protocol V1 sidecar; no vendor CLI in unit tests      |
+| A2.2 | Gemini CLI backend                        | Planned              | First agent by verified headless / JSON feasibility           |
+| A2.3 | Codex CLI backend                         | Planned              | `codex exec --json`                                           |
+| A2.4 | Claude Code backend                       | Planned              | `claude -p` / JSON output                                     |
+| A2.5 | Cross-runtime conformance + acceptance    | Planned              | Extend A1.4-style harness                                     |
+| A2.6 | npm release readiness (runtime adapters)  | Planned              | Mirror A1.5 gates                                             |
 
 ## Verification (A1.1)
 
@@ -46,3 +52,13 @@
 - [x] `@osva-ai/contracts@1.1.0-rc.3` from npm (no pnpm patch)
 - [x] Pack-consumer scripts install official registry contracts tarball
 - [x] A1.1 and A1.2 workspace build, test, and external consumer smoke
+
+## Verification (A2.0)
+
+- [x] Architecture inventory with file-level references (osva + osva-adapters)
+- [x] External CLI research (Codex, Claude Code, Gemini) with verified vs unverified markers
+- [x] Integration strategy recommendation (REMOTE_HTTP sidecar hybrid)
+- [x] Security model and contract gap analysis
+- [x] A2.1–A2.6 roadmap documented
+- [x] `git diff --check` (documentation-only)
+- [ ] Pin CLI versions in docs when A2.2+ implementation starts (deferred)
