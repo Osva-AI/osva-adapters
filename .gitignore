@@ -11,3 +11,4 @@ Thumbs.db
 scripts/acceptance/a1-4/docker/.env
 scripts/acceptance/a1-4/docker/*.tgz
 scripts/acceptance/a1-4/evidence/
+scripts/acceptance/a1-5/evidence/

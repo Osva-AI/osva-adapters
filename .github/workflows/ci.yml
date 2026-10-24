@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, typecheck, build, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Prettier (A1.5 / CI paths)
+        run: |
+          pnpm prettier --check \
+            ".github/workflows/*.yml" \
+            "scripts/acceptance/a1-5/**/*.{mjs,md}" \
+            "docs/release/**/*.md"
+
+      - name: Lint
+        run: |
+          pnpm --filter @osva-ai/adapter-artifact-memory lint
+          pnpm --filter @osva-ai/adapter-artifact-azure lint
+
+      - name: Typecheck
+        run: |
+          pnpm --filter @osva-ai/adapter-artifact-memory typecheck
+          pnpm --filter @osva-ai/adapter-artifact-azure typecheck
+
+      - name: Build
+        run: pnpm -r run build
+
+      - name: Unit tests
+        run: |
+          pnpm --filter @osva-ai/adapter-artifact-memory test
+          pnpm --filter @osva-ai/adapter-artifact-azure test
+
+  pack-and-release-readiness:
+    name: Pack, inspect, external consumers
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Release readiness (A1.5)
+        run: node scripts/acceptance/a1-5/release-readiness.mjs --no-evidence
+
+  azurite-integration:
+    name: Azurite integration (bounded)
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: azurite-integration-osva-adapters
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Azure adapter
+        run: pnpm --filter @osva-ai/adapter-artifact-azure build
+
+      - name: Start Azurite
+        run: docker compose -f packages/artifact-azure/docker-compose.azurite.yml up -d
+
+      - name: Integration tests
+        env:
+          OSVA_ARTIFACT_AZURE_INTEGRATION: "1"
+          OSVA_ARTIFACT_AZURE_CONTAINER: osva-artifacts-ci
+          OSVA_ARTIFACT_AZURE_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+        run: pnpm --filter @osva-ai/adapter-artifact-azure test:integration
+
+      - name: Stop Azurite
+        if: always()
+        run: docker compose -f packages/artifact-azure/docker-compose.azurite.yml down -v
