@@ -10,9 +10,9 @@
 | A1.5 | npm release preparation                   | **Done (prep)**       | CI, pack inspect, `verify:a1-5`, manual publish workflow      |
 | A2.0 | External agent runtime architecture audit | **Done (docs)**       | See `docs/architecture/EXTERNAL_AGENT_RUNTIME_*.md`           |
 | A2.1 | `@osva-ai/runtime-cli-sidecar`            | **Done (foundation)** | Runtime Protocol V1 sidecar; fixture CLI + pack consumer      |
-| A2.2 | Gemini CLI backend                        | Planned               | First agent by verified headless / JSON feasibility           |
-| A2.3 | Codex CLI backend                         | Planned               | `codex exec --json`                                           |
-| A2.4 | Claude Code backend                       | Planned               | `claude -p` / JSON output                                     |
+| A2.2 | Gemini CLI backend                        | **Done (adapter)**    | `createGeminiCliProvider`; fixture + conformance tests        |
+| A2.3 | Codex CLI backend                         | **Done (adapter)**    | JSONL parser; default `read-only` sandbox                     |
+| A2.4 | Claude Code backend                       | **Done (adapter)**    | `--bare` + JSON output mapping                                |
 | A2.5 | Cross-runtime conformance + acceptance    | Planned               | Extend A1.4-style harness                                     |
 | A2.6 | npm release readiness (runtime adapters)  | Planned               | Mirror A1.5 gates                                             |
 
@@ -61,7 +61,7 @@
 - [x] Security model and contract gap analysis
 - [x] A2.1–A2.6 roadmap documented
 - [x] `git diff --check` (documentation-only)
-- [ ] Pin CLI versions in docs when A2.2+ implementation starts (deferred)
+- [x] Document CLI interface baselines in adapter docs (operator pins binary in OCI image)
 
 ## Verification (A2.1)
 

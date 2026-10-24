@@ -152,10 +152,18 @@ export function createCliSidecar(options: CliSidecarOptions): CliSidecar {
         assertSupportedRunInput(input);
 
         const cwdHint = readWorkingDirectoryHint(input);
-        const workingDirectory = assertPathUnderRoot(
-          options.config.workspaceRoot,
-          cwdHint ?? ".",
-        );
+        let workingDirectory: string;
+        try {
+          workingDirectory = assertPathUnderRoot(
+            options.config.workspaceRoot,
+            cwdHint ?? ".",
+          );
+        } catch {
+          throw new RuntimeExecutionError(
+            "Working directory is outside the configured workspace root.",
+            RUNTIME_PROTOCOL_ERROR_CODES.AGENT_EXECUTION_FAILED,
+          );
+        }
         const deadlineMs = readDeadlineMs(
           input,
           options.config.defaultDeadlineMs,

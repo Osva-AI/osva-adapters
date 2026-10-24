@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import type { JsonValue } from "@osva-ai/contracts";
 import { mergeProviderEnv, buildChildEnvironment } from "./env-filter.js";
 import { killProcessTree } from "./process-tree.js";
+import { RunInputValidationError } from "./providers/shared/run-input.js";
 import type {
   CliExecutionInput,
   CliExecutionProvider,
@@ -85,7 +86,30 @@ export async function runCliExecution(
   log: SidecarLogger,
 ): Promise<CliExecutionResult> {
   const startedAt = Date.now();
-  const launch = provider.buildLaunch(input);
+  let launch;
+  try {
+    launch = provider.buildLaunch(input);
+  } catch (error) {
+    const durationMs = Date.now() - startedAt;
+    const message =
+      error instanceof RunInputValidationError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : "Invalid CLI launch configuration.";
+    log({
+      type: "cli_failed",
+      executionId: input.executionId,
+      classification: "cli_failure",
+      durationMs,
+    });
+    return {
+      classification: "cli_failure",
+      outcome: "failure",
+      stderrPreview: message.slice(0, 500),
+      durationMs,
+    };
+  }
   const baseEnv = buildChildEnvironment(config.envAllowlist);
   const env = mergeProviderEnv(baseEnv, launch.env);
 

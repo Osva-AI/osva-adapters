@@ -32,7 +32,7 @@ Packages are versioned **independently** on npm unless a release note documents 
 | ---------------------------------- | ----------------------------------- | ----------------------- |
 | `@osva-ai/adapter-artifact-memory` | Not published (404)                 | `0.1.0`                 |
 | `@osva-ai/adapter-artifact-azure`  | Not published (404)                 | `0.1.0`                 |
-| `@osva-ai/runtime-cli-sidecar`     | Not published (404)                 | `0.1.0`                 |
+| `@osva-ai/runtime-cli-sidecar`     | Not published (404)                 | `0.1.0` (A2.1–A2.4 CLI providers) |
 
 Pin adapters with explicit contracts in deployment images:
 

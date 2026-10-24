@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { killProcessTree } from "./lib/run-with-deadline.mjs";
+import { spawnCommand } from "./lib/spawn-package-manager.mjs";
 
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -22,20 +23,12 @@ const OFFICIAL_SDK_VERSION = "1.1.0-rc.3";
 const OFFICIAL_RUNTIME_PROTOCOL_VERSION = "1.1.0-rc.3";
 
 function run(command, args, options = {}) {
-  const useShell =
-    process.platform === "win32" &&
-    (command === "pnpm" || command === "npm" || command === "npx");
-  const result = spawnSync(command, args, {
+  spawnCommand(command, args, {
     cwd: options.cwd ?? REPO_ROOT,
     stdio: options.stdio ?? "inherit",
-    shell: useShell,
-    env: { ...process.env, ...options.env },
+    env: options.env,
+    repoRoot: REPO_ROOT,
   });
-  if (result.status !== 0) {
-    throw new Error(
-      `${command} ${args.join(" ")} failed (exit ${String(result.status)})`,
-    );
-  }
 }
 
 async function packSidecar() {

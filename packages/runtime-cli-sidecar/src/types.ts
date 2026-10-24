@@ -48,6 +48,8 @@ export interface CliExecutionProvider {
   ): CliExecutionResult;
 }
 
+import type { CliProviderKind } from "./cli-provider-kind.js";
+
 export interface SidecarConfig {
   readonly host: string;
   readonly port: number;
@@ -63,6 +65,12 @@ export interface SidecarConfig {
   readonly completedCacheTtlMs: number;
   readonly capabilityTimeoutMs?: number;
   readonly draining: boolean;
+  /** Operator-selected CLI backend (never from HTTP). */
+  readonly cliProvider: CliProviderKind;
+  readonly geminiCommand?: string;
+  readonly codexCommand?: string;
+  readonly claudeCommand?: string;
+  readonly fixtureScriptPath?: string;
 }
 
 export type SidecarLogEvent =

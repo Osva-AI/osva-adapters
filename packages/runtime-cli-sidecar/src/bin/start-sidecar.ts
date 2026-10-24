@@ -1,16 +1,26 @@
 #!/usr/bin/env node
 import { mkdir } from "node:fs/promises";
 import { loadSidecarConfigFromEnv } from "../config.js";
-import { createFixtureCliProvider } from "../providers/fixture-provider.js";
+import { createCliProviderFromSidecarConfig } from "../providers/create-cli-provider.js";
+import { validateProviderStartup } from "../providers/validate-provider-startup.js";
 import { createCliSidecar } from "../sidecar.js";
 
 async function main(): Promise<void> {
   const config = loadSidecarConfigFromEnv();
   await mkdir(config.workspaceRoot, { recursive: true });
 
-  const provider = createFixtureCliProvider({
-    workspaceRoot: config.workspaceRoot,
-  });
+  const provider = createCliProviderFromSidecarConfig(config);
+  await validateProviderStartup(
+    provider,
+    config.cliProvider,
+    config.cliProvider === "gemini"
+      ? config.geminiCommand
+      : config.cliProvider === "codex"
+        ? config.codexCommand
+        : config.cliProvider === "claude"
+          ? config.claudeCommand
+          : undefined,
+  );
 
   const sidecar = createCliSidecar({ provider, config });
   await sidecar.listen();

@@ -56,8 +56,18 @@ Outbound execute POST policy (`@osva/outbound-network`) is enforced in **OSVA co
 in the sidecar. Operators must configure allowed remote endpoints and private-network opt-in
 per existing REMOTE_HTTP documentation. **Do not weaken SSRF restrictions** to pass tests.
 
-## Known limitations (A2.1)
+## Vendor CLI policy (A2.2–A2.4)
+
+- Provider kind and binary path are **operator env only** (`OSVA_SIDECAR_CLI_PROVIDER`, `OSVA_SIDECAR_*_BINARY`).
+- Run input cannot set `provider`, `command`, `sandbox`, `yolo`, or `dangerouslySkipPermissions`.
+- Gemini: rejects `yolo` / `auto_edit` approval modes; default `--sandbox`.
+- Codex: rejects `danger-full-access`; default `--sandbox read-only`.
+- Claude: default `--bare` + `--allowedTools` from env; no skip-permissions flags.
+- Vendor API keys are allowlisted env vars only — OSVA capability tokens are never passed to CLI children.
+
+## Known limitations
 
 - In-memory deduplication only; no cross-replica coordination.
 - Client disconnect abort applies to the primary request for an `executionId`, not coalesced duplicates.
 - No built-in seccomp/AppArmor; use container isolation for untrusted code paths.
+- Shared sidecar + shared host credentials are **not** multi-tenant isolation.
