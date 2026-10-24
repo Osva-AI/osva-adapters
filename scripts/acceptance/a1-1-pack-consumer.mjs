@@ -59,7 +59,7 @@ async function packOfficialContractsFromRegistry() {
       "--pack-destination",
       packDir,
     ],
-    { cwd: REPO_ROOT, shell: true },
+    { cwd: REPO_ROOT },
   );
   const { readdir } = await import("node:fs/promises");
   const files = (await readdir(packDir)).filter((name) =>
@@ -187,13 +187,10 @@ console.log("External pack consumer smoke passed.");
 `,
     );
 
-    run("npm", ["install", "--no-fund", "--no-audit"], {
-      cwd: installRoot,
-      shell: true,
-    });
-    run("npm", ["run", "typecheck"], { cwd: installRoot, shell: true });
-    run("npm", ["run", "build"], { cwd: installRoot, shell: true });
-    run("npm", ["run", "smoke"], { cwd: installRoot, shell: true });
+    run("npm", ["install", "--no-fund", "--no-audit"], { cwd: installRoot });
+    run("npm", ["run", "typecheck"], { cwd: installRoot });
+    run("npm", ["run", "build"], { cwd: installRoot });
+    run("npm", ["run", "smoke"], { cwd: installRoot });
 
     const adapterPackageJson = JSON.parse(
       await readFile(path.join(ADAPTER_PACKAGE_DIR, "package.json"), "utf8"),

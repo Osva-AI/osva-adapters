@@ -26,6 +26,8 @@ pnpm --filter <package> build
 pnpm --filter <package> test
 ```
 
+Unit tests (`pnpm --filter <package> test`) are hermetic and fast. External npm pack-consumer acceptance is **not** run inside Vitest; use section 5 and `pnpm verify:a1-5` / release-readiness instead.
+
 ## 4. Integration (when applicable)
 
 - Start local dependencies (for example Azurite via `docker compose`).

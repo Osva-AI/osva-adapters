@@ -8,6 +8,11 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  AZURE_PACK_CONSUMER_DEADLINE_MS,
+  PACK_CONSUMER_DEADLINE_MS,
+  runWithDeadline,
+} from "../lib/run-with-deadline.mjs";
 import { inspectAdapterTarball } from "./lib/pack-inspect.mjs";
 import { packAdapter, verifyRegistrationExport } from "./lib/pack-pipeline.mjs";
 
@@ -120,7 +125,16 @@ async function main() {
         entry.externalConsumer =
           "skipped (--skip-azure-docker; run scripts/acceptance/a1-2-pack-consumer.mjs locally)";
       } else {
-        run(process.execPath, [pkg.packConsumerScript]);
+        const deadlineMs =
+          pkg.name === "@osva-ai/adapter-artifact-azure"
+            ? AZURE_PACK_CONSUMER_DEADLINE_MS
+            : PACK_CONSUMER_DEADLINE_MS;
+        await runWithDeadline(process.execPath, [pkg.packConsumerScript], {
+          cwd: REPO_ROOT,
+          timeoutMs: deadlineMs,
+          label: path.relative(REPO_ROOT, pkg.packConsumerScript),
+          shell: false,
+        });
         entry.externalConsumer = "pass";
       }
 

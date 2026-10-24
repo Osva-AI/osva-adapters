@@ -4,6 +4,5 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["test/**/*.test.ts"],
-    testTimeout: 120_000,
   },
 });
