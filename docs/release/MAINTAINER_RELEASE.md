@@ -4,11 +4,11 @@ Independent npm packages under `@osva-ai/*`. **Publication is manual** via GitHu
 
 ## Packages
 
-| npm package                        | Directory                  | Initial version |
-| ---------------------------------- | -------------------------- | --------------- |
-| `@osva-ai/adapter-artifact-memory` | `packages/artifact-memory` | `0.1.0`         |
-| `@osva-ai/adapter-artifact-azure`  | `packages/artifact-azure`  | `0.1.0`         |
-| `@osva-ai/runtime-cli-sidecar`     | `packages/runtime-cli-sidecar` | `0.1.0`     |
+| npm package                        | Directory                      | Initial version |
+| ---------------------------------- | ------------------------------ | --------------- |
+| `@osva-ai/adapter-artifact-memory` | `packages/artifact-memory`     | `0.1.0`         |
+| `@osva-ai/adapter-artifact-azure`  | `packages/artifact-azure`      | `0.1.0`         |
+| `@osva-ai/runtime-cli-sidecar`     | `packages/runtime-cli-sidecar` | `0.1.0`         |
 
 Versions are **independent** unless a release note documents a coordinated bump.
 

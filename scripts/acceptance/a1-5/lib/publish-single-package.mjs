@@ -16,12 +16,23 @@ async function verifySidecarPackExports(tgzPath) {
   try {
     await writeFile(
       path.join(workRoot, "package.json"),
-      JSON.stringify({ name: "sidecar-reg-check", private: true, type: "module" }),
+      JSON.stringify({
+        name: "sidecar-reg-check",
+        private: true,
+        type: "module",
+      }),
     );
     const { spawnSync } = await import("node:child_process");
     const install = spawnSync(
       "npm",
-      ["install", "--no-save", tgzPath, "@osva-ai/contracts@1.1.0-rc.3", "@osva-ai/sdk@1.1.0-rc.3", "@osva-ai/runtime-protocol@1.1.0-rc.3"],
+      [
+        "install",
+        "--no-save",
+        tgzPath,
+        "@osva-ai/contracts@1.1.0-rc.3",
+        "@osva-ai/sdk@1.1.0-rc.3",
+        "@osva-ai/runtime-protocol@1.1.0-rc.3",
+      ],
       { cwd: workRoot, stdio: "inherit", shell: process.platform === "win32" },
     );
     if (install.status !== 0) {
