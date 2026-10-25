@@ -8,6 +8,7 @@ Independent npm packages under `@osva-ai/*`. **Publication is manual** via GitHu
 | ---------------------------------- | -------------------------- | --------------- |
 | `@osva-ai/adapter-artifact-memory` | `packages/artifact-memory` | `0.1.0`         |
 | `@osva-ai/adapter-artifact-azure`  | `packages/artifact-azure`  | `0.1.0`         |
+| `@osva-ai/runtime-cli-sidecar`     | `packages/runtime-cli-sidecar` | `0.1.0`     |
 
 Versions are **independent** unless a release note documents a coordinated bump.
 
@@ -20,10 +21,19 @@ pnpm install --frozen-lockfile
 pnpm verify:a1-5
 ```
 
+For the CLI runtime sidecar:
+
+```bash
+pnpm test:release-readiness:a2-6
+```
+
+This runs `release-readiness.mjs --require-a25` (Docker + OSVA RC3 worker acceptance required).
+
 Optional higher-level gate (Docker + OSVA `v1.1.0-rc.3`):
 
 ```bash
 node scripts/acceptance/a1-4/run.mjs
+node scripts/acceptance/a2-5/run.mjs
 ```
 
 ## GitHub environment protection

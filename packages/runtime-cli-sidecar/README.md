@@ -80,6 +80,40 @@ See [CLI_SIDECAR_SECURITY.md](../../docs/architecture/CLI_SIDECAR_SECURITY.md). 
 pnpm --filter @osva-ai/runtime-cli-sidecar test
 node scripts/acceptance/a2-1-pack-consumer.mjs
 node scripts/acceptance/a2-2-4-pack-consumer.mjs
+pnpm test:acceptance:a2-5    # Docker + OSVA RC3 worker E2E
+pnpm test:release-readiness:a2-6
 ```
 
 Live vendor smoke tests require operator credentials and are not part of default CI.
+
+## OSVA worker deployment (REMOTE_HTTP)
+
+1. Deploy sidecar on a private network reachable from the worker.
+2. Set worker `OSVA_REMOTE_HTTP_ALLOW_PRIVATE_NETWORKS=true` **only** for the sidecar subnet (see [CLI_SIDECAR_SECURITY.md](../../docs/architecture/CLI_SIDECAR_SECURITY.md)).
+3. Register an AgentVersion:
+
+```json
+{
+  "runtime": {
+    "type": "REMOTE_HTTP",
+    "protocolVersion": "1",
+    "endpoint": "http://cli-sidecar:9321/execute"
+  }
+}
+```
+
+4. Pin `@osva-ai/contracts@1.1.0-rc.3` (and matching SDK / runtime-protocol) in the deployment image.
+
+## OCI image
+
+Build locally (not published from CI):
+
+```bash
+docker build -t osva-cli-sidecar:local packages/runtime-cli-sidecar
+```
+
+Mount `/workspace`, set `OSVA_SIDECAR_CLI_PROVIDER`, and inject vendor credentials via secrets — never via run input.
+
+## Release
+
+Prepublication gate: `pnpm test:release-readiness:a2-6`. npm publish remains **manual** via `.github/workflows/publish-package.yml`.

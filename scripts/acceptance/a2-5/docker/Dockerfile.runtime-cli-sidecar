@@ -1,0 +1,36 @@
+# syntax=docker/dockerfile:1
+# Deterministic sidecar image for A2.5 deployment acceptance (fixture-backed CLIs).
+
+FROM node:24-bookworm-slim
+
+WORKDIR /sidecar
+
+COPY runtime-cli-sidecar.tgz /tmp/runtime-cli-sidecar.tgz
+COPY sidecar-entrypoint.mjs /sidecar/sidecar-entrypoint.mjs
+
+RUN mkdir -p /sidecar/node_modules/@osva-ai \
+  && tar -xzf /tmp/runtime-cli-sidecar.tgz -C /tmp \
+  && mv /tmp/package /sidecar/node_modules/@osva-ai/runtime-cli-sidecar \
+  && npm install \
+    --prefix /sidecar/node_modules/@osva-ai/runtime-cli-sidecar \
+    --omit=dev \
+    --no-fund \
+    --no-audit \
+  && rm -rf /tmp/runtime-cli-sidecar.tgz /tmp/package \
+  && mkdir -p /workspace \
+  && chown -R node:node /sidecar /workspace
+
+USER node
+
+ENV OSVA_SIDECAR_HOST=0.0.0.0 \
+    OSVA_SIDECAR_PORT=9321 \
+    OSVA_SIDECAR_WORKSPACE_ROOT=/workspace \
+    OSVA_SIDECAR_CLI_PROVIDER=fixture \
+    NODE_ENV=production
+
+EXPOSE 9321
+
+HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=12 \
+  CMD node -e "fetch('http://127.0.0.1:9321/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+CMD ["node", "/sidecar/sidecar-entrypoint.mjs"]

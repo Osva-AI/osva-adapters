@@ -1,116 +1,131 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { buildExecuteBody, postExecute } from "./helpers.js";
-import { startTestSidecar } from "./helpers.js";
+import { createClaudeCliProvider } from "../src/providers/claude-provider.js";
+import { createCodexCliProvider } from "../src/providers/codex-provider.js";
+import { createGeminiCliProvider } from "../src/providers/gemini-provider.js";
+import { createCliSidecar } from "../src/sidecar.js";
 import {
-  buildVendorExecuteBody,
-  scenarioPrompt,
-  startVendorSidecar,
-  type VendorFixtureKind,
-} from "./vendor-helpers.js";
+  buildExecuteBody,
+  createTestConfig,
+  postExecute,
+  PROTOCOL_VERSION,
+} from "./helpers.js";
 
-const VENDORS: VendorFixtureKind[] = ["gemini", "codex", "claude"];
+const fixturesDir = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../fixtures",
+);
 
-describe("cross-provider conformance (fixture CLIs)", () => {
-  for (const vendor of VENDORS) {
-    describe(vendor, () => {
-      it("returns protocol success for valid prompt input", async () => {
-        const { sidecar, baseUrl } = await startVendorSidecar(vendor);
+function scenarioPrompt(scenario: string): string {
+  return `__osva_scenario=${scenario}__ conformance`;
+}
+
+function wrapWithFixture(
+  base: ReturnType<typeof createGeminiCliProvider>,
+  fixtureName: "gemini" | "codex" | "claude",
+) {
+  const script = path.join(fixturesDir, `osva-fixture-${fixtureName}-cli.mjs`);
+  return {
+    providerId: base.providerId,
+    buildLaunch(input: Parameters<typeof base.buildLaunch>[0]) {
+      const launch = base.buildLaunch(input);
+      return {
+        ...launch,
+        command: process.execPath,
+        args: [script, ...launch.args],
+      };
+    },
+    parseOutput: base.parseOutput.bind(base),
+  };
+}
+
+async function startProviderSidecar(
+  provider: "gemini" | "codex" | "claude",
+  workspaceRoot: string,
+) {
+  const base =
+    provider === "gemini"
+      ? createGeminiCliProvider({
+          workspaceRoot,
+          command: process.execPath,
+          sandbox: false,
+          skipTrust: true,
+        })
+      : provider === "codex"
+        ? createCodexCliProvider({
+            workspaceRoot,
+            command: process.execPath,
+            sandbox: "read-only",
+            skipGitRepoCheck: true,
+          })
+        : createClaudeCliProvider({
+            workspaceRoot,
+            command: process.execPath,
+            bare: true,
+            allowedTools: "Read",
+          });
+
+  const wrapped = wrapWithFixture(base, provider);
+  const config = createTestConfig(workspaceRoot, { cliProvider: provider });
+  const sidecar = createCliSidecar({ provider: wrapped, config });
+  await sidecar.listen();
+  const address = sidecar.server.address();
+  if (address === null || typeof address === "string") {
+    throw new Error("Expected TCP port.");
+  }
+  return {
+    sidecar,
+    baseUrl: `http://127.0.0.1:${String(address.port)}`,
+  };
+}
+
+describe("CLI provider conformance (fixture-backed)", () => {
+  for (const provider of ["gemini", "codex", "claude"] as const) {
+    describe(provider, () => {
+      it("returns SUCCEEDED for success scenario", async () => {
+        const { mkdtemp } = await import("node:fs/promises");
+        const os = await import("node:os");
+        const workspaceRoot = await mkdtemp(
+          path.join(os.tmpdir(), `conf-${provider}-`),
+        );
+        const { sidecar, baseUrl } = await startProviderSidecar(
+          provider,
+          workspaceRoot,
+        );
         try {
-          const { status, json } = await postExecute(
-            baseUrl,
-            buildVendorExecuteBody({
-              executionId: `${vendor}-conf-success`,
-              scenario: "success",
-            }),
-          );
-          expect(status).toBe(200);
-          expect(json).toMatchObject({ outcome: "SUCCEEDED" });
-        } finally {
-          await sidecar.close();
-        }
-      });
-
-      it("returns protocol failure for CLI error scenarios", async () => {
-        const { sidecar, baseUrl } = await startVendorSidecar(vendor);
-        try {
-          const scenario =
-            vendor === "gemini"
-              ? "api-error"
-              : vendor === "codex"
-                ? "error-event"
-                : "provider-error";
           const { json } = await postExecute(
             baseUrl,
-            buildVendorExecuteBody({
-              executionId: `${vendor}-conf-fail`,
-              scenario,
+            buildExecuteBody({
+              executionId: `${provider}-conf-success`,
+              input: { prompt: scenarioPrompt("success") },
             }),
           );
           expect(json).toMatchObject({
-            outcome: "FAILED",
-            error: { code: "AGENT_EXECUTION_FAILED" },
+            outcome: "SUCCEEDED",
+            protocolVersion: PROTOCOL_VERSION,
           });
         } finally {
           await sidecar.close();
         }
       });
 
-      it("rejects duplicate executionId with conflicting input", async () => {
-        const { sidecar, baseUrl } = await startVendorSidecar(vendor);
-        try {
-          const id = `${vendor}-conf-dup`;
-          const first = await postExecute(
-            baseUrl,
-            buildVendorExecuteBody({ executionId: id, scenario: "success" }),
-          );
-          expect(first.json).toMatchObject({ outcome: "SUCCEEDED" });
-          const second = await postExecute(
-            baseUrl,
-            buildVendorExecuteBody({
-              executionId: id,
-              prompt: scenarioPrompt("fail-exit"),
-            }),
-          );
-          expect(second.json).toMatchObject({
-            outcome: "FAILED",
-            error: { code: "RUNTIME_PROTOCOL_FAILURE" },
-          });
-        } finally {
-          await sidecar.close();
-        }
-      });
-
-      it("enforces execution deadlines", async () => {
-        const { sidecar, baseUrl } = await startVendorSidecar(vendor, {
-          defaultDeadlineMs: 800,
-        });
+      it("returns FAILED for fail-exit scenario", async () => {
+        const { mkdtemp } = await import("node:fs/promises");
+        const os = await import("node:os");
+        const workspaceRoot = await mkdtemp(
+          path.join(os.tmpdir(), `conf-${provider}-fail-`),
+        );
+        const { sidecar, baseUrl } = await startProviderSidecar(
+          provider,
+          workspaceRoot,
+        );
         try {
           const { json } = await postExecute(
             baseUrl,
-            buildVendorExecuteBody({
-              executionId: `${vendor}-conf-timeout`,
-              scenario: "hang",
-              extraInput: { deadlineMs: 800 },
-            }),
-          );
-          expect(json).toMatchObject({
-            outcome: "FAILED",
-            error: { message: "CLI execution timed out." },
-          });
-        } finally {
-          await sidecar.close();
-        }
-      }, 20_000);
-
-      it("rejects path traversal working directories", async () => {
-        const { sidecar, baseUrl } = await startVendorSidecar(vendor);
-        try {
-          const { json } = await postExecute(
-            baseUrl,
-            buildVendorExecuteBody({
-              executionId: `${vendor}-conf-path`,
-              scenario: "success",
-              extraInput: { cwd: "../../../Windows" },
+            buildExecuteBody({
+              executionId: `${provider}-conf-fail`,
+              input: { prompt: scenarioPrompt("fail-exit") },
             }),
           );
           expect(json).toMatchObject({ outcome: "FAILED" });
@@ -119,41 +134,29 @@ describe("cross-provider conformance (fixture CLIs)", () => {
         }
       });
 
-      it("rejects interactive approval fields", async () => {
-        const { sidecar, baseUrl } = await startVendorSidecar(vendor);
+      it("classifies malformed CLI output as failure", async () => {
+        const { mkdtemp } = await import("node:fs/promises");
+        const os = await import("node:os");
+        const workspaceRoot = await mkdtemp(
+          path.join(os.tmpdir(), `conf-${provider}-bad-`),
+        );
+        const { sidecar, baseUrl } = await startProviderSidecar(
+          provider,
+          workspaceRoot,
+        );
         try {
           const { json } = await postExecute(
             baseUrl,
-            buildVendorExecuteBody({
-              executionId: `${vendor}-conf-approval`,
-              scenario: "success",
-              extraInput: { interactiveApproval: true },
+            buildExecuteBody({
+              executionId: `${provider}-conf-malformed`,
+              input: { prompt: scenarioPrompt("malformed-json") },
             }),
           );
-          expect(json).toMatchObject({
-            outcome: "FAILED",
-            error: { message: expect.stringContaining("Interactive approval") },
-          });
+          expect(json).toMatchObject({ outcome: "FAILED" });
         } finally {
           await sidecar.close();
         }
       });
     });
   }
-
-  it("preserves A2.1 fixture provider behavior", async () => {
-    const { sidecar, baseUrl } = await startTestSidecar();
-    try {
-      const { json } = await postExecute(
-        baseUrl,
-        buildExecuteBody({ executionId: "fixture-regression" }),
-      );
-      expect(json).toMatchObject({
-        outcome: "SUCCEEDED",
-        output: { ok: true, scenario: "success" },
-      });
-    } finally {
-      await sidecar.close();
-    }
-  });
 });

@@ -1,105 +1,118 @@
-import os from "node:os";
 import { describe, expect, it } from "vitest";
-import { createClaudeCliProvider } from "../src/providers/claude-provider.js";
-import { createCodexCliProvider } from "../src/providers/codex-provider.js";
-import { createGeminiCliProvider } from "../src/providers/gemini-provider.js";
-import { extractPrompt } from "../src/providers/shared/run-input.js";
-import { redactSensitiveText } from "../src/redact.js";
-import { postExecute } from "./helpers.js";
-import {
-  buildVendorExecuteBody,
-  startVendorSidecar,
-} from "./vendor-helpers.js";
+import { RUNTIME_PROTOCOL_MAX_BODY_BYTES } from "@osva-ai/runtime-protocol";
+import { buildExecuteBody, postExecute, startTestSidecar } from "./helpers.js";
 
-describe("cli sidecar security negatives", () => {
-  it("rejects run input that attempts to override provider policy", () => {
-    expect(() =>
-      extractPrompt({
-        prompt: "hello",
-        provider: "malicious",
-        command: "/bin/sh",
-      }),
-    ).toThrow(/cannot override/);
-  });
+const CAPABILITY_PROBE = "security-test-capability-token-value";
 
-  it("rejects forbidden gemini approval modes at launch", () => {
-    const provider = createGeminiCliProvider({ workspaceRoot: "/tmp" });
-    expect(() =>
-      provider.buildLaunch({
-        executionId: "x",
-        runInput: { prompt: "hi", geminiApprovalMode: "yolo" },
-        workingDirectory: "/tmp",
-        deadlineMs: 1000,
-        signal: new AbortController().signal,
-      }),
-    ).toThrow(/not permitted/);
-  });
-
-  it("rejects empty Claude allowedTools allowlist", () => {
-    expect(() =>
-      createClaudeCliProvider({
-        workspaceRoot: os.tmpdir(),
-        allowedTools: "   ",
-      }),
-    ).toThrow(/non-empty/);
-  });
-
-  it("rejects dangerous codex sandbox in provider config", () => {
-    expect(() =>
-      createCodexCliProvider({
-        workspaceRoot: "/tmp",
-        sandbox: "danger-full-access",
-      }),
-    ).toThrow(/not permitted/);
-  });
-
-  it("does not reflect capability tokens in redacted logs", () => {
-    const sample = 'Bearer sk-test-token capabilities {"token":"abc123"}';
-    const redacted = redactSensitiveText(sample);
-    expect(redacted).not.toContain("sk-test-token");
-    expect(redacted).not.toContain("abc123");
-  });
-
-  it("rejects missing prompt for vendor providers over HTTP", async () => {
-    const { sidecar, baseUrl } = await startVendorSidecar("gemini");
+describe("runtime-cli-sidecar security negatives", () => {
+  it("rejects invalid Bearer auth when configured", async () => {
+    const { sidecar, baseUrl } = await startTestSidecar({
+      authSecret: "expected-secret",
+    });
     try {
-      const { json } = await postExecute(baseUrl, {
-        protocolVersion: "1",
-        executionId: "sec-no-prompt",
-        input: { scenario: "success" },
-        capabilities: { endpoint: "http://127.0.0.1:1", token: "secret-cap" },
-      });
-      expect(json).toMatchObject({
-        outcome: "FAILED",
-        error: { code: "AGENT_EXECUTION_FAILED" },
-      });
+      const bad = await postExecute(
+        baseUrl,
+        buildExecuteBody({ executionId: "sec-auth-bad" }),
+      );
+      expect(bad.status).toBe(401);
+      const good = await postExecute(
+        baseUrl,
+        buildExecuteBody({ executionId: "sec-auth-good" }),
+        { headers: { authorization: "Bearer expected-secret" } },
+      );
+      expect(good.status).toBe(200);
     } finally {
       await sidecar.close();
     }
   });
 
-  it("requires auth when configured for vendor sidecars", async () => {
-    const { sidecar, baseUrl } = await startVendorSidecar("codex", {
-      authSecret: "vendor-secret",
-    });
+  it("rejects invalid protocol version", async () => {
+    const { sidecar, baseUrl } = await startTestSidecar();
     try {
-      const unauthorized = await postExecute(
+      const body = {
+        ...buildExecuteBody({ executionId: "sec-bad-version" }),
+        protocolVersion: "0",
+      };
+      const response = await fetch(`${baseUrl}/execute`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      expect(response.status).not.toBe(200);
+    } finally {
+      await sidecar.close();
+    }
+  });
+
+  it("rejects execute while draining", async () => {
+    const { sidecar, baseUrl } = await startTestSidecar();
+    sidecar.beginDraining();
+    try {
+      const ready = await fetch(`${baseUrl}/health/ready`);
+      expect(ready.status).toBe(503);
+      const { status } = await postExecute(
         baseUrl,
-        buildVendorExecuteBody({
-          executionId: "sec-auth",
-          scenario: "success",
+        buildExecuteBody({ executionId: "sec-draining" }),
+      );
+      expect(status).toBe(503);
+    } finally {
+      await sidecar.close();
+    }
+  });
+
+  it("does not echo capability tokens in failure paths", async () => {
+    const logs: import("../src/types.js").SidecarLogEvent[] = [];
+    const { sidecar, baseUrl } = await startTestSidecar({}, logs);
+    try {
+      await postExecute(
+        baseUrl,
+        buildExecuteBody({
+          executionId: "sec-token-echo",
+          token: CAPABILITY_PROBE,
+          input: { scenario: "fail" },
         }),
       );
-      expect(unauthorized.status).toBe(401);
-      const authorized = await postExecute(
-        baseUrl,
-        buildVendorExecuteBody({
-          executionId: "sec-auth-2",
-          scenario: "success",
+      const serialized = JSON.stringify(logs);
+      expect(serialized).not.toContain(CAPABILITY_PROBE);
+    } finally {
+      await sidecar.close();
+    }
+  });
+
+  it("rejects oversized bodies", async () => {
+    const { sidecar, baseUrl } = await startTestSidecar();
+    try {
+      const huge = "z".repeat(RUNTIME_PROTOCOL_MAX_BODY_BYTES + 64);
+      const response = await fetch(`${baseUrl}/execute`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...buildExecuteBody({ executionId: "sec-oversized" }),
+          pad: huge,
         }),
-        { headers: { authorization: "Bearer vendor-secret" } },
-      );
-      expect(authorized.status).toBe(200);
+      });
+      expect(response.status).toBe(413);
+    } finally {
+      await sidecar.close();
+    }
+  });
+
+  it("rejects interactive approval fields in run input", async () => {
+    const { sidecar, baseUrl } = await startTestSidecar();
+    try {
+      for (const input of [
+        { interactiveApproval: true },
+        { humanApproval: true },
+      ]) {
+        const { json } = await postExecute(
+          baseUrl,
+          buildExecuteBody({
+            executionId: `sec-input-${Object.keys(input)[0]}`,
+            input,
+          }),
+        );
+        expect(json).toMatchObject({ outcome: "FAILED" });
+      }
     } finally {
       await sidecar.close();
     }

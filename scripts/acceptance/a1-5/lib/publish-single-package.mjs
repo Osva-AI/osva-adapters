@@ -4,10 +4,64 @@
  */
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { inspectAdapterTarball, readPackedTarball } from "./pack-inspect.mjs";
 import { runPackPipeline, verifyRegistrationExport } from "./pack-pipeline.mjs";
+
+async function verifySidecarPackExports(tgzPath) {
+  const { mkdtemp, rm, writeFile } = await import("node:fs/promises");
+  const os = await import("node:os");
+  const workRoot = await mkdtemp(path.join(os.tmpdir(), "osva-a26-sidecar-"));
+  try {
+    await writeFile(
+      path.join(workRoot, "package.json"),
+      JSON.stringify({ name: "sidecar-reg-check", private: true, type: "module" }),
+    );
+    const { spawnSync } = await import("node:child_process");
+    const install = spawnSync(
+      "npm",
+      ["install", "--no-save", tgzPath, "@osva-ai/contracts@1.1.0-rc.3", "@osva-ai/sdk@1.1.0-rc.3", "@osva-ai/runtime-protocol@1.1.0-rc.3"],
+      { cwd: workRoot, stdio: "inherit", shell: process.platform === "win32" },
+    );
+    if (install.status !== 0) {
+      throw new Error("Sidecar pack install failed.");
+    }
+    const entryPath = path.join(
+      workRoot,
+      "node_modules",
+      "@osva-ai",
+      "runtime-cli-sidecar",
+      "dist",
+      "index.js",
+    );
+    const mod = await import(pathToFileURL(entryPath).href);
+    for (const exportName of [
+      "createCliSidecar",
+      "createCliProviderFromSidecarConfig",
+      "createGeminiCliProvider",
+      "createCodexCliProvider",
+      "createClaudeCliProvider",
+    ]) {
+      if (typeof mod[exportName] !== "function") {
+        throw new Error(`Missing export ${exportName}`);
+      }
+    }
+    const binPath = path.join(
+      workRoot,
+      "node_modules",
+      "@osva-ai",
+      "runtime-cli-sidecar",
+      "dist",
+      "bin",
+      "start-sidecar.js",
+    );
+    const { access } = await import("node:fs/promises");
+    await access(binPath);
+  } finally {
+    await rm(workRoot, { force: true, recursive: true });
+  }
+}
 
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -24,6 +78,11 @@ const PACKAGE_DIRS = {
     REPO_ROOT,
     "packages",
     "artifact-azure",
+  ),
+  "@osva-ai/runtime-cli-sidecar": path.join(
+    REPO_ROOT,
+    "packages",
+    "runtime-cli-sidecar",
   ),
 };
 
@@ -66,7 +125,11 @@ export async function verifySinglePackageForPublish(
       throw new Error(`Packed version ${String(packed.version)} mismatch`);
     }
 
-    await verifyRegistrationExport(packageName, tgz);
+    if (packageName === "@osva-ai/runtime-cli-sidecar") {
+      await verifySidecarPackExports(tgz);
+    } else {
+      await verifyRegistrationExport(packageName, tgz);
+    }
 
     return { inspectFindings: inspect.findings ?? [] };
   } finally {

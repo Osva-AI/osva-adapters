@@ -41,11 +41,13 @@ jobs:
         run: |
           pnpm --filter @osva-ai/adapter-artifact-memory lint
           pnpm --filter @osva-ai/adapter-artifact-azure lint
+          pnpm --filter @osva-ai/runtime-cli-sidecar lint
 
       - name: Typecheck
         run: |
           pnpm --filter @osva-ai/adapter-artifact-memory typecheck
           pnpm --filter @osva-ai/adapter-artifact-azure typecheck
+          pnpm --filter @osva-ai/runtime-cli-sidecar typecheck
 
       - name: Build
         run: pnpm -r run build
@@ -54,6 +56,7 @@ jobs:
         run: |
           pnpm --filter @osva-ai/adapter-artifact-memory test
           pnpm --filter @osva-ai/adapter-artifact-azure test
+          pnpm --filter @osva-ai/runtime-cli-sidecar test
 
   pack-and-release-readiness:
     name: Pack, inspect, external consumers
@@ -77,6 +80,56 @@ jobs:
 
       - name: Release readiness (A1.5)
         run: node scripts/acceptance/a1-5/release-readiness.mjs --no-evidence
+
+      - name: Runtime sidecar pack consumer (A2.2–A2.4)
+        run: node scripts/acceptance/a2-2-4-pack-consumer.mjs
+
+  runtime-sidecar-release-readiness:
+    name: Runtime sidecar release readiness (A2.6 + required A2.5)
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: A2.6 release readiness (requires A2.5 deployment; no npm publish)
+        run: node scripts/acceptance/a2-6/release-readiness.mjs --require-a25
+
+  a25-deployment-smoke:
+    name: A2.5 deployment smoke (informational)
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: A2.5 deployment acceptance
+        run: node scripts/acceptance/a2-5/run.mjs
 
   azurite-integration:
     name: Azurite integration (bounded)

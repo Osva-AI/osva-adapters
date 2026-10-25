@@ -142,7 +142,7 @@ Implementation plan for Codex CLI, Claude Code, and Gemini CLI integration via *
 - `evidence/latest.json` (or successor) includes external runtime scenarios.
 - Matrix doc comparing Gemini / Codex / Claude feature support (updated from A2.0 tables).
 
-**Verification gates:** `pnpm verify:a2-5` (to be defined); Docker required.
+**Verification gates:** `pnpm verify:a2-5` / `pnpm test:acceptance:a2-5`; Docker required.
 
 **Security:** Negative tests: invalid auth, excessive output size (>1 MiB protocol limit), forbidden sandbox flags rejected by sidecar config validator.
 
