@@ -1,0 +1,273 @@
+name: osva-a25
+
+x-osva-image: &osva-image
+  image: ${OSVA_IMAGE:-osva-a25-with-azure:local}
+
+x-osva-artifact-env: &osva-artifact-env
+  OSVA_ARTIFACT_STORAGE_DRIVER: registered
+  OSVA_ARTIFACT_BLOB_STORE_REGISTER_MODULE: "@osva-ai/adapter-artifact-azure"
+  OSVA_ARTIFACT_AZURE_CONTAINER: ${OSVA_ARTIFACT_AZURE_CONTAINER:-osva-a25-artifacts}
+  OSVA_ARTIFACT_AZURE_CONNECTION_STRING: ${OSVA_ARTIFACT_AZURE_CONNECTION_STRING:?OSVA_ARTIFACT_AZURE_CONNECTION_STRING is required}
+  OSVA_ARTIFACT_MAX_BYTES: ${OSVA_ARTIFACT_MAX_BYTES:-67108864}
+
+x-osva-common-env: &osva-common-env
+  <<: *osva-artifact-env
+  OSVA_DATABASE_URL: postgres://osva:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/osva
+  OSVA_VALKEY_URL: ${OSVA_VALKEY_URL:-redis://valkey:6379}
+  OSVA_HEALTH_HOST: 0.0.0.0
+  OSVA_HEALTH_PORT: "8081"
+  OSVA_TRUSTED_RUNTIME_ROOT: /var/lib/osva/trusted-runtime
+  OSVA_KNOWLEDGE_EMBEDDING_PROVIDER: ${OSVA_KNOWLEDGE_EMBEDDING_PROVIDER:-DETERMINISTIC}
+  OSVA_KNOWLEDGE_EMBEDDING_MODEL: ${OSVA_KNOWLEDGE_EMBEDDING_MODEL:-deterministic-v1}
+  OSVA_KNOWLEDGE_EMBEDDING_DIMENSIONS: ${OSVA_KNOWLEDGE_EMBEDDING_DIMENSIONS:-384}
+  OSVA_CONTAINER_ENABLED: "false"
+  OSVA_RUNTIME_CAPABILITY_SECRET: ${OSVA_RUNTIME_CAPABILITY_SECRET:-a25-test-capability-secret}
+  OSVA_REMOTE_HTTP_ALLOW_PRIVATE_NETWORKS: "true"
+  OSVA_RUNTIME_CAPABILITY_HOST: 0.0.0.0
+  OSVA_RUNTIME_CAPABILITY_PORT: "44995"
+  OSVA_RUNTIME_CAPABILITY_BASE_URL: http://worker:44995
+
+services:
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
+    ports:
+      - "${OSVA_A25_AZURITE_PUBLISH_PORT:-11001}:10000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:10000/devstoreaccount1?comp=list').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+  azurite-init:
+    image: node:24-bookworm-slim
+    restart: "no"
+    environment:
+      <<: *osva-artifact-env
+    volumes:
+      - ../../a1-4/docker/azurite-init.mjs:/acceptance/azurite-init.mjs:ro
+    working_dir: /acceptance
+    command:
+      - /bin/sh
+      - -c
+      - |
+        npm install @azure/storage-blob@12.28.0 --no-save --no-fund --no-audit
+        node /acceptance/azurite-init.mjs
+    depends_on:
+      azurite:
+        condition: service_healthy
+
+  cli-sidecar:
+    image: ${SIDECAR_IMAGE:-osva-a25-cli-sidecar:local}
+    build:
+      context: .
+      dockerfile: Dockerfile.runtime-cli-sidecar
+    restart: unless-stopped
+    environment:
+      OSVA_SIDECAR_HOST: 0.0.0.0
+      OSVA_SIDECAR_PORT: "9321"
+      OSVA_SIDECAR_WORKSPACE_ROOT: /workspace
+      OSVA_SIDECAR_CLI_PROVIDER: ${OSVA_SIDECAR_CLI_PROVIDER:-fixture}
+      OSVA_SIDECAR_MAX_CONCURRENT: ${OSVA_SIDECAR_MAX_CONCURRENT:-4}
+      OSVA_SIDECAR_DEFAULT_DEADLINE_MS: ${OSVA_SIDECAR_DEFAULT_DEADLINE_MS:-120000}
+      OSVA_SIDECAR_AUTH_SECRET: ${OSVA_SIDECAR_AUTH_SECRET:-}
+    volumes:
+      - osva-a25-sidecar-workspace:/workspace
+    ports:
+      - "${OSVA_A25_SIDECAR_PUBLISH_PORT:-19321}:9321"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:9321/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  postgres:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: osva
+      POSTGRES_USER: osva
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - osva-a25-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U osva -d osva"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  valkey:
+    image: valkey/valkey:8.1.10-alpine
+    restart: unless-stopped
+    command: ["valkey-server", "--appendonly", "yes"]
+    volumes:
+      - osva-a25-valkey:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  migrate:
+    <<: *osva-image
+    restart: "no"
+    environment:
+      <<: *osva-common-env
+      OSVA_PROCESS: migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    <<: *osva-image
+    restart: unless-stopped
+    environment:
+      <<: *osva-common-env
+      OSVA_PROCESS: web
+      OSVA_WEB_HOST: 0.0.0.0
+      OSVA_WEB_PORT: "3000"
+      OSVA_AUTH_SECRET: ${OSVA_AUTH_SECRET:?OSVA_AUTH_SECRET is required}
+      OSVA_AUTH_BASE_URL: ${OSVA_AUTH_BASE_URL:-http://127.0.0.1:18081}
+      OSVA_AUTH_TRUSTED_ORIGINS: ${OSVA_AUTH_TRUSTED_ORIGINS:-http://127.0.0.1:18081}
+    ports:
+      - "${OSVA_PUBLISH_WEB_PORT:-18081}:3000"
+    volumes:
+      - ../../a1-4/docker/probe-module-resolution.mjs:/app/adapters/artifact-storage/dist/probe-module-resolution.mjs:ro
+    depends_on:
+      azurite-init:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
+  worker:
+    <<: *osva-image
+    restart: unless-stopped
+    environment:
+      <<: *osva-common-env
+      OSVA_PROCESS: worker
+    volumes:
+      - osva-a25-trusted-runtime:/var/lib/osva/trusted-runtime
+      - ../../a1-4/docker/probe-module-resolution.mjs:/app/adapters/artifact-storage/dist/probe-module-resolution.mjs:ro
+    depends_on:
+      azurite-init:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_healthy
+      cli-sidecar:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8081/ready').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
+  knowledge-worker:
+    <<: *osva-image
+    restart: unless-stopped
+    environment:
+      <<: *osva-common-env
+      OSVA_PROCESS: knowledge-worker
+    volumes:
+      - ../../a1-4/docker/probe-module-resolution.mjs:/app/adapters/artifact-storage/dist/probe-module-resolution.mjs:ro
+    depends_on:
+      azurite-init:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8081/ready').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
+  scheduler:
+    <<: *osva-image
+    restart: unless-stopped
+    environment:
+      <<: *osva-common-env
+      OSVA_PROCESS: scheduler
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_healthy
+
+  workflow-orchestrator:
+    <<: *osva-image
+    restart: unless-stopped
+    environment:
+      <<: *osva-common-env
+      OSVA_PROCESS: workflow-orchestrator
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_healthy
+
+  bootstrap:
+    <<: *osva-image
+    restart: "no"
+    environment:
+      <<: *osva-common-env
+      OSVA_PROCESS: bootstrap
+      OSVA_AUTH_SECRET: ${OSVA_AUTH_SECRET:?OSVA_AUTH_SECRET is required}
+      OSVA_AUTH_BASE_URL: ${OSVA_AUTH_BASE_URL:-http://127.0.0.1:18081}
+      OSVA_BOOTSTRAP_WORKSPACE_NAME: ${OSVA_BOOTSTRAP_WORKSPACE_NAME:-A25 Sidecar Acceptance}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    profiles: ["bootstrap"]
+
+volumes:
+  osva-a25-postgres:
+  osva-a25-valkey:
+  osva-a25-trusted-runtime:
+  osva-a25-sidecar-workspace:

@@ -13,8 +13,8 @@
 | A2.2 | Gemini CLI backend                        | **Done (adapter)**    | `createGeminiCliProvider`; fixture + conformance tests        |
 | A2.3 | Codex CLI backend                         | **Done (adapter)**    | JSONL parser; default `read-only` sandbox                     |
 | A2.4 | Claude Code backend                       | **Done (adapter)**    | `--bare` + JSON output mapping                                |
-| A2.5 | Cross-runtime conformance + acceptance    | Planned               | Extend A1.4-style harness                                     |
-| A2.6 | npm release readiness (runtime adapters)  | Planned               | Mirror A1.5 gates                                             |
+| A2.5 | Cross-runtime conformance + acceptance    | **Done (harness)**    | `pnpm test:acceptance:a2-5`; OSVA RC3 + sidecar Compose       |
+| A2.6 | npm release readiness (runtime adapters)  | **Done (prep)**       | `pnpm test:release-readiness:a2-6`; publish BLOCKED on Zod    |
 
 ## Verification (A1.1)
 
@@ -70,4 +70,20 @@
 - [x] Deterministic fixture CLI subprocess coverage
 - [x] External npm pack consumer (`pnpm test:pack-consumer:a2-1`)
 - [x] Architecture + security docs (`CLI_SIDECAR_DESIGN.md`, `CLI_SIDECAR_SECURITY.md`)
-- [ ] Live OSVA REMOTE_HTTP end-to-end (deferred to A2.5; SSRF/network policy unchanged)
+- [x] Live OSVA REMOTE_HTTP end-to-end (A2.5 Docker harness; fixture-backed CLIs)
+
+## Verification (A2.5)
+
+- [x] Docker Compose + OSVA v1.1.0-rc.3 worker → sidecar → fixture/gemini/codex/claude fixtures
+- [x] RunAttempt SUCCEEDED/FAILED persistence via public API
+- [x] Transport + identity security scenarios (deployment HTTP)
+- [x] Evidence JSON (`scripts/acceptance/a2-5/evidence/latest.json`)
+- [ ] Live vendor CLI (operator credentials; NOT RUN)
+
+## Verification (A2.6)
+
+- [x] `scripts/acceptance/a2-6/release-readiness.mjs`
+- [x] CI: sidecar quality gates + A2.6 job + optional A2.5 Docker smoke
+- [x] `publish-package.yml` selector for `@osva-ai/runtime-cli-sidecar`
+- [x] OCI Dockerfile under `packages/runtime-cli-sidecar`
+- [ ] npm publish (BLOCKED: zod@4.6.5 / GHSA-mrhx-c7xc-m3w5 until upstream RC fix)

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A2.5 deployment acceptance evidence",
+  "type": "object",
+  "required": [
+    "slice",
+    "schemaVersion",
+    "osvaTag",
+    "sidecarPackage",
+    "sidecarVersion",
+    "runtimeProtocolVersion",
+    "scenarios",
+    "startedAt"
+  ],
+  "properties": {
+    "slice": { "const": "A2.5" },
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "osvaTag": { "type": "string" },
+    "osvaCommit": { "type": "string" },
+    "sidecarPackage": { "const": "@osva-ai/runtime-cli-sidecar" },
+    "sidecarVersion": { "type": "string" },
+    "runtimeProtocolVersion": { "const": "1" },
+    "gitRef": { "type": "string" },
+    "sidecarBuildId": { "type": "string" },
+    "deploymentProvenance": { "type": "object" },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "status", "at"],
+        "properties": {
+          "name": { "type": "string" },
+          "status": { "enum": ["pass", "fail", "skip", "blocked"] },
+          "provider": { "type": "string" },
+          "executionId": { "type": "string" },
+          "outcome": { "type": "string" },
+          "durationMs": { "type": "number" },
+          "classification": { "type": "string" },
+          "verification": { "type": "string" },
+          "at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "finishedAt": { "type": "string", "format": "date-time" }
+  }
+}

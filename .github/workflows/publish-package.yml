@@ -11,6 +11,7 @@ on:
         options:
           - "@osva-ai/adapter-artifact-memory"
           - "@osva-ai/adapter-artifact-azure"
+          - "@osva-ai/runtime-cli-sidecar"
       expected_version:
         description: Version in package.json (must match; e.g. 0.1.0)
         required: true
@@ -104,6 +105,9 @@ jobs:
             "@osva-ai/adapter-artifact-azure")
               echo "dir=packages/artifact-azure" >> "$GITHUB_OUTPUT"
               ;;
+            "@osva-ai/runtime-cli-sidecar")
+              echo "dir=packages/runtime-cli-sidecar" >> "$GITHUB_OUTPUT"
+              ;;
             *)
               echo "Unknown package"
               exit 1
@@ -127,6 +131,10 @@ jobs:
           node scripts/acceptance/a1-5/prepublish-package.mjs \
             "${{ inputs.package }}" \
             "${{ inputs.expected_version }}"
+
+      - name: Runtime sidecar publication security gate
+        if: inputs.package == '@osva-ai/runtime-cli-sidecar'
+        run: node scripts/acceptance/a2-6/publication-security-gate.mjs
 
       - name: Confirm version not on registry
         run: |

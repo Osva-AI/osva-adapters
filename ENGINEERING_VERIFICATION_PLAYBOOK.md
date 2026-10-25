@@ -53,6 +53,22 @@ A1.4 deployment acceptance requires Docker and an OSVA `v1.1.0-rc.3` source tree
 
 A1.5 release readiness (`pnpm verify:a1-5`) intentionally skips whole-repo Prettier (use `pnpm format:check` separately when reformatting). See [scripts/acceptance/a1-5/README.md](./scripts/acceptance/a1-5/README.md).
 
+## 8. CLI runtime sidecar (A2.x)
+
+Per `@osva-ai/runtime-cli-sidecar`:
+
+```bash
+pnpm --filter @osva-ai/runtime-cli-sidecar lint
+pnpm --filter @osva-ai/runtime-cli-sidecar typecheck
+pnpm --filter @osva-ai/runtime-cli-sidecar build
+pnpm --filter @osva-ai/runtime-cli-sidecar test
+pnpm test:pack-consumer:a2-2-4
+pnpm verify:a2-5    # includes Docker deployment acceptance when available
+pnpm test:release-readiness:a2-6
+```
+
+A2.5 requires Docker and OSVA `v1.1.0-rc.3` (see [scripts/acceptance/a2-5/README.md](./scripts/acceptance/a2-5/README.md)).
+
 ## 7. Whitespace
 
 ```bash
