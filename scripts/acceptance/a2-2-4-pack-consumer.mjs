@@ -30,9 +30,9 @@ function fixturePathForProvider(consumerRoot, provider) {
   );
 }
 
-const OFFICIAL_CONTRACTS_VERSION = "1.1.0-rc.3";
-const OFFICIAL_SDK_VERSION = "1.1.0-rc.3";
-const OFFICIAL_RUNTIME_PROTOCOL_VERSION = "1.1.0-rc.3";
+const OFFICIAL_CONTRACTS_VERSION = "1.1.0-rc.4";
+const OFFICIAL_SDK_VERSION = "1.1.0-rc.4";
+const OFFICIAL_RUNTIME_PROTOCOL_VERSION = "1.1.0-rc.4";
 
 function run(command, args, options = {}) {
   spawnCommand(command, args, {

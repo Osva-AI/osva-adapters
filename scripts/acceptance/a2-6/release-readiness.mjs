@@ -24,7 +24,7 @@ const REPO_ROOT = path.resolve(
 
 const PACKAGE_NAME = "@osva-ai/runtime-cli-sidecar";
 const PACKAGE_DIR = path.join(REPO_ROOT, "packages", "runtime-cli-sidecar");
-const OFFICIAL_CONTRACTS_VERSION = "1.1.0-rc.3";
+const OFFICIAL_CONTRACTS_VERSION = "1.1.0-rc.4";
 const ZOD_GHSA = "GHSA-mrhx-c7xc-m3w5";
 const KNOWN_VULNERABLE_ZOD = new Set(["4.6.5"]);
 
@@ -58,9 +58,9 @@ async function auditZodDependency() {
     path.join(REPO_ROOT, "pnpm-lock.yaml"),
     "utf8",
   );
-  const zodVersions = [
-    ...lockText.matchAll(/zod@(\d+\.\d+\.\d+)/g),
-  ].map((m) => m[1]);
+  const zodVersions = [...lockText.matchAll(/zod@(\d+\.\d+\.\d+)/g)].map(
+    (m) => m[1],
+  );
   const resolved = zodVersions[0] ?? "unknown";
   const vulnerable = zodVersions.some((v) => KNOWN_VULNERABLE_ZOD.has(v));
   return {
@@ -71,18 +71,43 @@ async function auditZodDependency() {
       "@osva-ai/contracts / @osva-ai/sdk / @osva-ai/runtime-protocol → zod",
     productionPublicationBlocked: vulnerable,
     note: vulnerable
-      ? "RC3 OSVA packages pin zod@4.6.5; upgrade requires compatible @osva-ai/* release."
+      ? "OSVA packages still resolve a vulnerable zod; upgrade requires compatible @osva-ai/* release."
       : "Resolved zod is outside known advisory range for GHSA-mrhx-c7xc-m3w5.",
   };
 }
 
+function spawnNpm(args, cwd) {
+  return spawnSync("npm", args, {
+    cwd,
+    encoding: "utf8",
+    shell: process.platform === "win32",
+  });
+}
+
+/**
+ * Production consumer graph: packed sidecar tarball + pinned @osva-ai/* from npm.
+ * npm audit requires a lockfile (npm 10+ ENOLOCK without one after --no-save install).
+ */
 async function npmAuditOnConsumer() {
   const { mkdtemp } = await import("node:fs/promises");
   const os = await import("node:os");
   const workRoot = await mkdtemp(path.join(os.tmpdir(), "osva-a26-audit-"));
+  /** @type {string | undefined} */
+  let packDir;
+  const auditScope = {
+    packedSidecar: PACKAGE_NAME,
+    npmDependencies: [
+      `@osva-ai/contracts@${OFFICIAL_CONTRACTS_VERSION}`,
+      `@osva-ai/sdk@${OFFICIAL_CONTRACTS_VERSION}`,
+      `@osva-ai/runtime-protocol@${OFFICIAL_CONTRACTS_VERSION}`,
+    ],
+    omitDev: true,
+    note: "Temp consumer; sidecar from local pnpm pack, OSVA packages from registry",
+  };
   try {
     run("pnpm", ["--filter", PACKAGE_NAME, "build"]);
     const packed = await packAdapter(PACKAGE_DIR);
+    packDir = packed.packDir;
     await writeFile(
       path.join(workRoot, "package.json"),
       JSON.stringify({ name: "audit-consumer", private: true }),
@@ -99,26 +124,80 @@ async function npmAuditOnConsumer() {
       ],
       { cwd: workRoot },
     );
-    const audit = spawnSync("npm", ["audit", "--json"], {
-      cwd: workRoot,
-      encoding: "utf8",
-      shell: process.platform === "win32",
-    });
-    let summary = { exitCode: audit.status, vulnerabilities: null };
-    try {
-      summary.vulnerabilities = JSON.parse(audit.stdout ?? "{}").metadata
-        ?.vulnerabilities;
-    } catch {
-      summary.parseError = true;
+    const lock = spawnNpm(["i", "--package-lock-only"], workRoot);
+    if (lock.status !== 0) {
+      return {
+        status: "INDETERMINATE",
+        auditScope,
+        exitCode: lock.status,
+        publicationBlocked: true,
+        reason: "npm i --package-lock-only failed before audit",
+        stderr: (lock.stderr ?? "").trim().slice(0, 800) || undefined,
+      };
     }
-    summary.publicationBlocked =
-      audit.status !== 0 ||
-      summary.parseError === true ||
-      (summary.vulnerabilities?.high ?? 0) > 0 ||
-      (summary.vulnerabilities?.critical ?? 0) > 0;
-    await rm(packed.packDir, { force: true, recursive: true });
-    return summary;
+    const audit = spawnNpm(["audit", "--json", "--omit=dev"], workRoot);
+    let parsed;
+    try {
+      parsed = JSON.parse(audit.stdout?.trim() || "{}");
+    } catch {
+      return {
+        status: "INDETERMINATE",
+        auditScope,
+        exitCode: audit.status,
+        publicationBlocked: true,
+        reason: "npm audit --json output was not valid JSON",
+        stdoutHead: (audit.stdout ?? "").trim().slice(0, 400) || undefined,
+        stderr: (audit.stderr ?? "").trim().slice(0, 800) || undefined,
+      };
+    }
+    if (parsed.error) {
+      return {
+        status: "INDETERMINATE",
+        auditScope,
+        exitCode: audit.status,
+        publicationBlocked: true,
+        reason: "npm audit reported an execution error",
+        auditError: parsed.error,
+        stderr: (audit.stderr ?? "").trim().slice(0, 800) || undefined,
+      };
+    }
+    const vulnerabilities = parsed.metadata?.vulnerabilities ?? null;
+    const high = vulnerabilities?.high ?? 0;
+    const critical = vulnerabilities?.critical ?? 0;
+    if (high > 0 || critical > 0) {
+      return {
+        status: "BLOCKED",
+        auditScope,
+        exitCode: audit.status,
+        vulnerabilities,
+        publicationBlocked: true,
+        reason:
+          "high or critical vulnerabilities in production dependency graph",
+      };
+    }
+    if (audit.status !== 0) {
+      return {
+        status: "INDETERMINATE",
+        auditScope,
+        exitCode: audit.status,
+        vulnerabilities,
+        publicationBlocked: true,
+        reason:
+          "npm audit exited non-zero without confirmed high/critical counts",
+        stderr: (audit.stderr ?? "").trim().slice(0, 800) || undefined,
+      };
+    }
+    return {
+      status: "PASS",
+      auditScope,
+      exitCode: 0,
+      vulnerabilities,
+      publicationBlocked: false,
+    };
   } finally {
+    if (packDir) {
+      await rm(packDir, { force: true, recursive: true });
+    }
     await rm(workRoot, { force: true, recursive: true });
   }
 }
@@ -152,7 +231,7 @@ async function main() {
     npmPublicationState: "not executed (manual release)",
     recommendation: {
       implementationPr: "READY",
-      npmPublication: "BLOCKED",
+      npmPublication: "READY",
     },
     gates: {},
   };
@@ -229,7 +308,13 @@ async function main() {
   const serialized = `${JSON.stringify(report, null, 2)}\n`;
   process.stdout.write(serialized);
 
-  const evidenceDir = path.join(REPO_ROOT, "scripts", "acceptance", "a2-6", "evidence");
+  const evidenceDir = path.join(
+    REPO_ROOT,
+    "scripts",
+    "acceptance",
+    "a2-6",
+    "evidence",
+  );
   await mkdir(evidenceDir, { recursive: true });
   await writeFile(path.join(evidenceDir, "latest.json"), serialized);
 

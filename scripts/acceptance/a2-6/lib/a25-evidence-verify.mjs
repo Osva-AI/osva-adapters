@@ -42,7 +42,9 @@ export async function verifyA25Evidence(options) {
   } catch {
     return {
       ok: false,
-      errors: ["Missing A2.5 evidence file (scripts/acceptance/a2-5/evidence/latest.json)"],
+      errors: [
+        "Missing A2.5 evidence file (scripts/acceptance/a2-5/evidence/latest.json)",
+      ],
     };
   }
 
@@ -86,7 +88,11 @@ export async function verifyA25Evidence(options) {
   }
 
   if (errors.length > 0) {
-    return { ok: false, errors, evidenceSummary: { finishedAt, scenarioCount: scenarios.length } };
+    return {
+      ok: false,
+      errors,
+      evidenceSummary: { finishedAt, scenarioCount: scenarios.length },
+    };
   }
 
   return {

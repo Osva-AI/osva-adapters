@@ -2,8 +2,8 @@
 /**
  * A1.4 — OSVA deployment acceptance: registered @osva-ai/adapter-artifact-azure + Azurite.
  *
- * Requires Docker Compose v2, Node 24+, pnpm, and an OSVA v1.1.0-rc.3 source tree
- * (OSVA_RC3_SOURCE or shallow clone).
+ * Requires Docker Compose v2, Node 24+, pnpm, and an OSVA v1.1.0-rc.4 source tree
+ * (OSVA_RC4_SOURCE, legacy OSVA_RC3_SOURCE, or shallow clone).
  */
 import { spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
@@ -19,6 +19,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { captureComposeFailureDiagnostics } from "../lib/compose-failure-diagnostics.mjs";
 import { pollUntil } from "./lib/poll.mjs";
 import { run, runCapture } from "./lib/shell.mjs";
 
@@ -30,9 +31,11 @@ const COMPOSE_FILE = path.join(DOCKER_DIR, "compose.yml");
 const ENV_FILE = path.join(DOCKER_DIR, ".env");
 const ENV_EXAMPLE = path.join(DOCKER_DIR, ".env.example");
 
-const OSVA_RC3_TAG = "v1.1.0-rc.3";
-const OSVA_RC3_COMMIT = "744c1bbd8f968bc8c0293de5372fb9e59964286c";
-const BASE_IMAGE = "osva:1.1.0-rc.3-a14-base";
+const OSVA_RC_TAG = "v1.1.0-rc.4";
+const OSVA_RC_COMMIT = "cd38eea46b8ee44bb099ccf307818cfcd348f50b";
+const KEEP_COMPOSE_ON_FAILURE =
+  process.env.OSVA_A14_KEEP_COMPOSE_ON_FAILURE === "1";
+const BASE_IMAGE = "osva:1.1.0-rc.4-a14-base";
 const ADAPTER_IMAGE = "osva-a14-with-azure:local";
 
 const AZURITE_ACCOUNT_KEY_FRAGMENT =
@@ -40,10 +43,10 @@ const AZURITE_ACCOUNT_KEY_FRAGMENT =
 
 const evidence = {
   slice: "A1.4",
-  osvaTag: OSVA_RC3_TAG,
-  osvaCommit: OSVA_RC3_COMMIT,
+  osvaTag: OSVA_RC_TAG,
+  osvaCommit: OSVA_RC_COMMIT,
   adapterPackage: "@osva-ai/adapter-artifact-azure",
-  contractsVersion: "1.1.0-rc.3",
+  contractsVersion: "1.1.0-rc.4",
   startedAt: new Date().toISOString(),
   scenarios: [],
   moduleResolution: [],
@@ -76,17 +79,18 @@ async function ensureEnvFile() {
 }
 
 async function resolveOsvaSource() {
-  const configured = process.env.OSVA_RC3_SOURCE?.trim();
+  const configured =
+    process.env.OSVA_RC4_SOURCE?.trim() || process.env.OSVA_RC3_SOURCE?.trim();
   if (configured) {
     return path.resolve(configured);
   }
-  const cloneRoot = await mkdtemp(path.join(os.tmpdir(), "osva-rc3-src-"));
+  const cloneRoot = await mkdtemp(path.join(os.tmpdir(), "osva-rc4-src-"));
   run("git", [
     "clone",
     "--depth",
     "1",
     "--branch",
-    OSVA_RC3_TAG,
+    OSVA_RC_TAG,
     "https://github.com/Osva-AI/osva.git",
     cloneRoot,
   ]);
@@ -123,23 +127,23 @@ async function packAdapter() {
 }
 
 function buildImages(osvaSource) {
-  const ghcrRc3 = "ghcr.io/osva-ai/osva:1.1.0-rc.3";
+  const ghcrRc = "ghcr.io/osva-ai/osva:1.1.0-rc.4";
   let baseFromRegistry = false;
   try {
-    runCapture("docker", ["manifest", "inspect", ghcrRc3]);
+    runCapture("docker", ["manifest", "inspect", ghcrRc]);
     baseFromRegistry = true;
   } catch {
     baseFromRegistry = false;
   }
 
   if (baseFromRegistry) {
-    evidence.deploymentProvenance.baseImage = ghcrRc3;
-    evidence.deploymentProvenance.baseImageProvenance = "ghcr-published-rc3";
-    run("docker", ["tag", ghcrRc3, BASE_IMAGE]);
+    evidence.deploymentProvenance.baseImage = ghcrRc;
+    evidence.deploymentProvenance.baseImageProvenance = "ghcr-published-rc4";
+    run("docker", ["tag", ghcrRc, BASE_IMAGE]);
   } else {
     evidence.deploymentProvenance.baseImage = BASE_IMAGE;
     evidence.deploymentProvenance.baseImageProvenance =
-      "local-docker-build-from-osva-rc3-tag";
+      "local-docker-build-from-osva-rc4-tag";
     evidence.deploymentProvenance.osvaSource =
       evidence.deploymentProvenance.osvaSource ?? osvaSource;
     run("docker", [
@@ -169,6 +173,35 @@ function composeDown() {
   run("docker", [...composeArgs(["down", "-v", "--remove-orphans"])], {
     cwd: DOCKER_DIR,
   });
+}
+
+function composeDownUnlessKept(acceptanceFailed) {
+  if (acceptanceFailed && KEEP_COMPOSE_ON_FAILURE) {
+    console.error(
+      "OSVA_A14_KEEP_COMPOSE_ON_FAILURE=1 — leaving Compose stack up for inspection.",
+    );
+    return;
+  }
+  composeDown();
+}
+
+async function captureFailureDiagnostics(phase, error) {
+  try {
+    evidence.failureDiagnostics = await captureComposeFailureDiagnostics({
+      composeFile: COMPOSE_FILE,
+      envFile: ENV_FILE,
+      cwd: DOCKER_DIR,
+      slice: "A1.4",
+      phase,
+      error,
+      evidenceDir: path.join(SCRIPT_DIR, "evidence"),
+    });
+  } catch (diagError) {
+    evidence.failureDiagnostics = {
+      phase,
+      captureError: String(diagError),
+    };
+  }
 }
 
 function composeUp() {
@@ -648,9 +681,10 @@ async function main() {
   const osvaSource = await resolveOsvaSource();
   if (!evidence.deploymentProvenance.osvaSource) {
     evidence.deploymentProvenance.osvaSource = osvaSource;
-    evidence.deploymentProvenance.osvaSourceMode = process.env.OSVA_RC3_SOURCE
-      ? "operator-provided"
-      : "ephemeral-clone";
+    evidence.deploymentProvenance.osvaSourceMode =
+      process.env.OSVA_RC4_SOURCE || process.env.OSVA_RC3_SOURCE
+        ? "operator-provided"
+        : "ephemeral-clone";
   }
 
   await packAdapter();
@@ -674,8 +708,18 @@ async function main() {
   }
 
   composeDown();
+  let acceptanceFailed = false;
+  let stackStarted = false;
   try {
-    composeUp();
+    try {
+      composeUp();
+    } catch (composeError) {
+      acceptanceFailed = true;
+      stackStarted = true;
+      await captureFailureDiagnostics("compose-up-wait", composeError);
+      throw composeError;
+    }
+    stackStarted = true;
 
     for (const service of ["web", "worker", "knowledge-worker"]) {
       await probeModuleResolution(service);
@@ -703,17 +747,29 @@ async function main() {
     await runCrossProcessScenarios(baseUrl, auth);
     scanLogsForSecrets();
     negativeScenarios();
+  } catch (error) {
+    acceptanceFailed = true;
+    await captureFailureDiagnostics("acceptance-scenario", error);
+    throw error;
   } finally {
-    try {
-      composeDown();
-      recordScenario("Cleanup removes compose stack and volumes", "pass");
-    } catch (cleanupError) {
-      recordScenario("Cleanup removes compose stack and volumes", "fail", {
-        error:
-          cleanupError instanceof Error
-            ? cleanupError.message
-            : String(cleanupError),
-      });
+    if (stackStarted) {
+      try {
+        composeDownUnlessKept(acceptanceFailed);
+        if (acceptanceFailed && KEEP_COMPOSE_ON_FAILURE) {
+          recordScenario("Cleanup removes compose stack and volumes", "skip", {
+            reason: "OSVA_A14_KEEP_COMPOSE_ON_FAILURE=1",
+          });
+        } else {
+          recordScenario("Cleanup removes compose stack and volumes", "pass");
+        }
+      } catch (cleanupError) {
+        recordScenario("Cleanup removes compose stack and volumes", "fail", {
+          error:
+            cleanupError instanceof Error
+              ? cleanupError.message
+              : String(cleanupError),
+        });
+      }
     }
     await writeEvidenceReport();
   }
@@ -725,8 +781,9 @@ main().catch(async (error) => {
   recordScenario("A1.4 runner", "fail", {
     error: error instanceof Error ? error.message : String(error),
   });
+  await captureFailureDiagnostics("runner", error);
   try {
-    composeDown();
+    composeDownUnlessKept(true);
   } catch {
     // ignore cleanup errors
   }

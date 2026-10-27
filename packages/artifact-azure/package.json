@@ -1,6 +1,6 @@
 {
   "name": "@osva-ai/adapter-artifact-azure",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Azure Blob Storage ArtifactBlobStore adapter for OSVA (operator-configured credentials)",
   "license": "Apache-2.0",
   "repository": {
@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@azure/storage-blob": "catalog:",
-    "@osva-ai/contracts": "1.1.0-rc.3"
+    "@osva-ai/contracts": "1.1.0-rc.4"
   },
   "devDependencies": {
     "@types/node": "catalog:",

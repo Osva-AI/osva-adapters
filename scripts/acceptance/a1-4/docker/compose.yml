@@ -26,6 +26,8 @@ x-osva-common-env: &osva-common-env
   OSVA_RUNTIME_CAPABILITY_HOST: 0.0.0.0
   OSVA_RUNTIME_CAPABILITY_PORT: "44995"
   OSVA_RUNTIME_CAPABILITY_BASE_URL: http://worker:44995
+  # RC4: public bind requires explicit acceptance-harness opt-in (not production).
+  OSVA_RUNTIME_CAPABILITY_ALLOW_PUBLIC_BIND: "true"
 
 services:
   azurite:

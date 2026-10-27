@@ -7,7 +7,7 @@ Includes **Gemini CLI**, **Codex CLI**, and **Claude Code** providers (A2.2–A2
 ## Install
 
 ```bash
-npm install @osva-ai/runtime-cli-sidecar @osva-ai/sdk@1.1.0-rc.3 @osva-ai/runtime-protocol@1.1.0-rc.3 @osva-ai/contracts@1.1.0-rc.3
+npm install @osva-ai/runtime-cli-sidecar @osva-ai/sdk@1.1.0-rc.4 @osva-ai/runtime-protocol@1.1.0-rc.4 @osva-ai/contracts@1.1.0-rc.4
 ```
 
 ## Run
@@ -102,7 +102,7 @@ Live vendor smoke tests require operator credentials and are not part of default
 }
 ```
 
-4. Pin `@osva-ai/contracts@1.1.0-rc.3` (and matching SDK / runtime-protocol) in the deployment image.
+4. Pin `@osva-ai/contracts@1.1.0-rc.4` (and matching SDK / runtime-protocol) in the deployment image.
 
 ## OCI image
 

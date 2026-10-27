@@ -5,6 +5,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { waitForAzuriteBlobReady } from "./lib/azurite-readiness.mjs";
+
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../..",
@@ -13,7 +15,7 @@ const REPO_ROOT = path.resolve(
 const ADAPTER_PACKAGE_DIR = path.join(REPO_ROOT, "packages", "artifact-azure");
 
 /** Official npm release consumed by adapters (unmodified registry tarball). */
-const OFFICIAL_CONTRACTS_VERSION = "1.1.0-rc.3";
+const OFFICIAL_CONTRACTS_VERSION = "1.1.0-rc.4";
 
 const AZURITE_CONNECTION_STRING =
   "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;";
@@ -131,13 +133,16 @@ async function main() {
     const contractsPacked = await packOfficialContractsFromRegistry();
     contractsPackDir = contractsPacked.packDir;
 
-    run("docker", [
-      "compose",
-      "-f",
-      path.join(ADAPTER_PACKAGE_DIR, "docker-compose.azurite.yml"),
-      "up",
-      "-d",
-    ]);
+    const azuriteCompose = path.join(
+      ADAPTER_PACKAGE_DIR,
+      "docker-compose.azurite.yml",
+    );
+    run("docker", ["compose", "-f", azuriteCompose, "up", "-d", "--wait"]);
+
+    await waitForAzuriteBlobReady(AZURITE_CONNECTION_STRING, {
+      label: "Azurite blob (host SDK)",
+      timeoutMs: 60_000,
+    });
 
     await ensureAzuriteContainer(smokeContainer);
 
@@ -247,6 +252,16 @@ console.log("External pack consumer smoke passed.");
       throw new Error("Unexpected adapter package name in workspace.");
     }
   } finally {
+    try {
+      run("docker", [
+        "compose",
+        "-f",
+        path.join(ADAPTER_PACKAGE_DIR, "docker-compose.azurite.yml"),
+        "down",
+      ]);
+    } catch {
+      // best-effort Azurite cleanup
+    }
     await rm(workRoot, { force: true, recursive: true });
     if (adapterPackDir !== undefined) {
       await rm(adapterPackDir, { force: true, recursive: true });

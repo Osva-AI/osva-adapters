@@ -2,17 +2,17 @@
 
 ## Tested against
 
-| Component                   | Version                 | Notes                                                                                   |
-| --------------------------- | ----------------------- | --------------------------------------------------------------------------------------- |
-| `@osva-ai/contracts`        | `1.1.0-rc.3` (declared) | Official npm `rc` dist-tag; includes M12.4.3 artifact blob store and registration types |
-| OSVA core (reference)       | `1.1.0-rc.3`            | [Osva-AI/osva](https://github.com/Osva-AI/osva) RC3 line (commit `744c1bb` and later)   |
-| Node.js                     | `>=24`                  | Matches contracts `engines`                                                             |
-| `@osva-ai/sdk`              | `1.1.0-rc.3`            | `@osva-ai/runtime-cli-sidecar` runtime HTTP handler                                     |
-| `@osva-ai/runtime-protocol` | `1.1.0-rc.3`            | Runtime Protocol V1 wire schemas for sidecar                                            |
+| Component                   | Version                 | Notes                                                                                          |
+| --------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `@osva-ai/contracts`        | `1.1.0-rc.4` (declared) | Official npm `rc` dist-tag; includes M12.4.3 artifact blob store and registration types        |
+| OSVA core (reference)       | `1.1.0-rc.4`            | [Osva-AI/osva](https://github.com/Osva-AI/osva) RC4 line (tag `v1.1.0-rc.4`, commit `c70a0c7`) |
+| Node.js                     | `>=24`                  | Matches contracts `engines`                                                                    |
+| `@osva-ai/sdk`              | `1.1.0-rc.4`            | `@osva-ai/runtime-cli-sidecar` runtime HTTP handler                                            |
+| `@osva-ai/runtime-protocol` | `1.1.0-rc.4`            | Runtime Protocol V1 wire schemas for sidecar                                                   |
 
 ## npm consumption (A1.3)
 
-Adapters depend on the **unmodified** registry package `@osva-ai/contracts@1.1.0-rc.3`. No pnpm patches or vendored contract copies are used in this repository.
+Adapters depend on the **unmodified** registry package `@osva-ai/contracts@1.1.0-rc.4`. No pnpm patches or vendored contract copies are used in this repository.
 
 Install with the `rc` dist-tag when pinning explicitly:
 
@@ -26,18 +26,18 @@ npm install @osva-ai/contracts@rc
 
 Packages are versioned **independently** on npm unless a release note documents a coordinated bump.
 
-## npm publication (A1.5 preparation)
+## npm publication
 
-| Package                            | Registry status (pre-release audit) | Planned initial version |
-| ---------------------------------- | ----------------------------------- | ----------------------- |
-| `@osva-ai/adapter-artifact-memory` | Not published (404)                 | `0.1.0`                 |
-| `@osva-ai/adapter-artifact-azure`  | Not published (404)                 | `0.1.0`                 |
-| `@osva-ai/runtime-cli-sidecar`     | Not published (404)                 | `0.1.0` (A2.1–A2.4 CLI providers) |
+| Package                            | Registry status (verified) | Version in this repo (A3)                 |
+| ---------------------------------- | -------------------------- | ----------------------------------------- |
+| `@osva-ai/adapter-artifact-memory` | Published (`0.1.0` on npm) | `0.1.1` (`@osva-ai/contracts@1.1.0-rc.4`) |
+| `@osva-ai/adapter-artifact-azure`  | Published (`0.1.0` on npm) | `0.1.1` (`@osva-ai/contracts@1.1.0-rc.4`) |
+| `@osva-ai/runtime-cli-sidecar`     | Not published (404)        | `0.1.0` (A2.1–A2.4 CLI providers)         |
 
 Pin adapters with explicit contracts in deployment images:
 
 ```bash
-npm install @osva-ai/adapter-artifact-azure@0.1.0 @osva-ai/contracts@1.1.0-rc.3
+npm install @osva-ai/adapter-artifact-azure@0.1.1 @osva-ai/contracts@1.1.0-rc.4
 ```
 
 Verification before any publish: `pnpm verify:a1-5`. Maintainer steps: [docs/release/MAINTAINER_RELEASE.md](./docs/release/MAINTAINER_RELEASE.md).
@@ -54,6 +54,6 @@ Verification before any publish: `pnpm verify:a1-5`. Maintainer steps: [docs/rel
 
 | Component             | Version / source                          | Notes                                                                  |
 | --------------------- | ----------------------------------------- | ---------------------------------------------------------------------- |
-| OSVA deployment image | `v1.1.0-rc.3` git tag                     | GHCR `1.1.0-rc.3` used when manifest exists; else local `docker build` |
+| OSVA deployment image | `v1.1.0-rc.4` git tag                     | GHCR `1.1.0-rc.4` used when manifest exists; else local `docker build` |
 | Azurite               | `mcr.microsoft.com/azure-storage/azurite` | Test-only devstore credentials in harness `.env.example`               |
 | Acceptance runner     | `scripts/acceptance/a1-4/run.mjs`         | Does not modify OSVA core; evidence → `evidence/latest.json`           |

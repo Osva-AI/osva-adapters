@@ -8,14 +8,14 @@
 
 ## 1. A2.5 architecture and impact inventory
 
-| Area | Change |
-| ---- | ------ |
+| Area               | Change                                                                                  |
+| ------------------ | --------------------------------------------------------------------------------------- |
 | Deployment harness | `scripts/acceptance/a2-5/` — Compose project `osva-a25`, sidecar image + OSVA RC3 stack |
-| Design doc | `docs/acceptance/A2_5_INTEGRATION_DESIGN.md` |
-| Sidecar tests | `conformance.test.ts`, `security.test.ts` |
-| Evidence | `scripts/acceptance/a2-5/evidence/latest.json` (gitignored) |
-| Operator docs | Sidecar README, conformance matrix, playbook §8 |
-| CI | Sidecar lint/typecheck/test; A2.5 Docker job; A2.6 release readiness job |
+| Design doc         | `docs/acceptance/A2_5_INTEGRATION_DESIGN.md`                                            |
+| Sidecar tests      | `conformance.test.ts`, `security.test.ts`                                               |
+| Evidence           | `scripts/acceptance/a2-5/evidence/latest.json` (gitignored)                             |
+| Operator docs      | Sidecar README, conformance matrix, playbook §8                                         |
+| CI                 | Sidecar lint/typecheck/test; A2.5 Docker job; A2.6 release readiness job                |
 
 No OSVA core modifications.
 
@@ -37,12 +37,12 @@ Sidecar: fixture-backed Gemini/Codex/Claude via `sidecar-entrypoint.mjs` (no liv
 
 ## 3–5. Provider deployment results (fixture-backed)
 
-| Provider | Worker E2E | Worker failure | Notes |
-| -------- | ---------- | -------------- | ----- |
-| fixture | PASS | PASS | RunAttempt SUCCEEDED / FAILED |
-| gemini | PASS | PASS | ~1s duration |
-| codex | PASS | PASS | |
-| claude | PASS | PASS | |
+| Provider | Worker E2E | Worker failure | Notes                         |
+| -------- | ---------- | -------------- | ----------------------------- |
+| fixture  | PASS       | PASS           | RunAttempt SUCCEEDED / FAILED |
+| gemini   | PASS       | PASS           | ~1s duration                  |
+| codex    | PASS       | PASS           |                               |
+| claude   | PASS       | PASS           |                               |
 
 Evidence execution IDs in `scripts/acceptance/a2-5/evidence/latest.json`.
 
@@ -56,29 +56,29 @@ Worker runs polled to terminal state; attempts fetched via `/v1/runs/{id}/attemp
 
 ## 7–8. Cancellation, timeout, crash/restart
 
-| Scenario | Layer | Result |
-| -------- | ----- | ------ |
-| Sidecar restart | Deployment | PASS |
-| Duplicate executionId coalesce | HTTP + unit | PASS |
-| Conflicting duplicate input | HTTP + unit | PASS |
-| Execution deadline / hang | Unit (`sidecar.test.ts`) | PASS |
-| Worker cancel → sidecar | — | **NOT IMPLEMENTED** in OSVA RemoteHttp (documented gap) |
-| Sidecar crash mid-flight | — | **NOT RUN** (heavy; dedupe after restart documented as best-effort) |
+| Scenario                       | Layer                    | Result                                                              |
+| ------------------------------ | ------------------------ | ------------------------------------------------------------------- |
+| Sidecar restart                | Deployment               | PASS                                                                |
+| Duplicate executionId coalesce | HTTP + unit              | PASS                                                                |
+| Conflicting duplicate input    | HTTP + unit              | PASS                                                                |
+| Execution deadline / hang      | Unit (`sidecar.test.ts`) | PASS                                                                |
+| Worker cancel → sidecar        | —                        | **NOT IMPLEMENTED** in OSVA RemoteHttp (documented gap)             |
+| Sidecar crash mid-flight       | —                        | **NOT RUN** (heavy; dedupe after restart documented as best-effort) |
 
 ---
 
 ## 9. Security negative-path results
 
-| Test | Result |
-| ---- | ------ |
-| Invalid protocol version | PASS (deployment + unit) |
-| Malformed JSON | PASS |
-| Conflicting executionId | PASS |
-| Provider/command override in input | PASS (gemini provider) |
-| Auth Bearer (unit) | PASS |
-| Draining / 503 | PASS (unit) |
-| Oversized body | PASS (unit) |
-| Capability token log scan | PASS |
+| Test                               | Result                   |
+| ---------------------------------- | ------------------------ |
+| Invalid protocol version           | PASS (deployment + unit) |
+| Malformed JSON                     | PASS                     |
+| Conflicting executionId            | PASS                     |
+| Provider/command override in input | PASS (gemini provider)   |
+| Auth Bearer (unit)                 | PASS                     |
+| Draining / 503                     | PASS (unit)              |
+| Oversized body                     | PASS (unit)              |
+| Capability token log scan          | PASS                     |
 
 ---
 
@@ -105,13 +105,13 @@ Compose sets `OSVA_REMOTE_HTTP_ALLOW_PRIVATE_NETWORKS=true` for private sidecar 
 
 ## 13. Package readiness (`@osva-ai/runtime-cli-sidecar@0.1.0`)
 
-| Check | Status |
-| ----- | ------ |
-| name / version / exports / bin | OK |
-| `files`: dist, fixtures, README | OK |
-| engines node >=24 | OK |
-| dependencies pinned 1.1.0-rc.3 | OK |
-| Tarball inspect (107 entries) | PASS |
+| Check                              | Status                  |
+| ---------------------------------- | ----------------------- |
+| name / version / exports / bin     | OK                      |
+| `files`: dist, fixtures, README    | OK                      |
+| engines node >=24                  | OK                      |
+| dependencies pinned 1.1.0-rc.3     | OK                      |
+| Tarball inspect (107 entries)      | PASS                    |
 | workspace:/catalog: in packed deps | PASS (external install) |
 
 npm registry: **not verified published** (manual release only).
@@ -129,10 +129,10 @@ npm registry: **not verified published** (manual release only).
 
 ## 15. Docker image readiness
 
-| Image | Purpose | Status |
-| ----- | ------- | ------ |
-| `Dockerfile.runtime-cli-sidecar` | A2.5 acceptance | Built and exercised |
-| `packages/runtime-cli-sidecar/Dockerfile` | Operator OCI | Builds locally; **not pushed** |
+| Image                                     | Purpose         | Status                         |
+| ----------------------------------------- | --------------- | ------------------------------ |
+| `Dockerfile.runtime-cli-sidecar`          | A2.5 acceptance | Built and exercised            |
+| `packages/runtime-cli-sidecar/Dockerfile` | Operator OCI    | Builds locally; **not pushed** |
 
 ---
 
@@ -151,13 +151,13 @@ npm registry: **not verified published** (manual release only).
 
 ## 18. Upstream Zod remediation
 
-| Item | Value |
-| ---- | ----- |
-| Advisory | GHSA-mrhx-c7xc-m3w5 |
-| Resolved | zod@4.6.5 |
-| Patched | zod >= 4.6.6 |
-| Path | @osva-ai/contracts, sdk, runtime-protocol → zod |
-| Action | Wait for OSVA RC npm release; do not force-break RC3 pins in adapters |
+| Item     | Value                                                                 |
+| -------- | --------------------------------------------------------------------- |
+| Advisory | GHSA-mrhx-c7xc-m3w5                                                   |
+| Resolved | zod@4.6.5                                                             |
+| Patched  | zod >= 4.6.6                                                          |
+| Path     | @osva-ai/contracts, sdk, runtime-protocol → zod                       |
+| Action   | Wait for OSVA RC npm release; do not force-break RC3 pins in adapters |
 
 ---
 
@@ -173,12 +173,12 @@ node scripts/acceptance/a2-5/run.mjs                     # PASS (Docker)
 
 ## 20. Tests skipped or blocked
 
-| Item | Status |
-| ---- | ------ |
-| Live Gemini/Codex/Claude vendor APIs | NOT RUN |
-| npm publish | BLOCKED (manual + Zod) |
-| GHCR sidecar push | BLOCKED (manual) |
-| Full lifecycle matrix (sidecar crash, worker interrupt) | Partial / unit-only |
+| Item                                                    | Status                 |
+| ------------------------------------------------------- | ---------------------- |
+| Live Gemini/Codex/Claude vendor APIs                    | NOT RUN                |
+| npm publish                                             | BLOCKED (manual + Zod) |
+| GHCR sidecar push                                       | BLOCKED (manual)       |
+| Full lifecycle matrix (sidecar crash, worker interrupt) | Partial / unit-only    |
 
 ---
 

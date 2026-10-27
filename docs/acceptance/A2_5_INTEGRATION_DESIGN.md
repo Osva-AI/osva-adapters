@@ -24,16 +24,16 @@ Docker Compose project `osva-a25`
 
 ## Operator-controlled configuration
 
-| Layer | Variable | Purpose |
-| ----- | -------- | ------- |
-| Worker | `OSVA_REMOTE_HTTP_ALLOW_PRIVATE_NETWORKS=true` | Allow `http://cli-sidecar:9321/execute` (RFC1918 / Docker DNS) |
-| Worker | `OSVA_RUNTIME_CAPABILITY_*` | Short-lived capability tokens for protocol (unchanged from A1.4) |
-| Sidecar | `OSVA_SIDECAR_CLI_PROVIDER` | `fixture` \| `gemini` \| `codex` \| `claude` |
-| Sidecar | `OSVA_SIDECAR_*_BINARY` + entrypoint wrapper | Points vendor providers at packed fixture scripts (no live vendor APIs) |
-| Sidecar | `OSVA_SIDECAR_WORKSPACE_ROOT` | Isolated volume for CLI cwd |
-| Sidecar | `OSVA_SIDECAR_AUTH_SECRET` | Optional Bearer auth on `/execute` (hermetic tests + optional deployment scenario) |
-| Agent manifest | `runtime.endpoint` | Must match sidecar URL on Compose network |
-| Artifacts | A1.4 Azure registered driver | Cross-process artifact persistence for RunAttempt output |
+| Layer          | Variable                                       | Purpose                                                                            |
+| -------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Worker         | `OSVA_REMOTE_HTTP_ALLOW_PRIVATE_NETWORKS=true` | Allow `http://cli-sidecar:9321/execute` (RFC1918 / Docker DNS)                     |
+| Worker         | `OSVA_RUNTIME_CAPABILITY_*`                    | Short-lived capability tokens for protocol (unchanged from A1.4)                   |
+| Sidecar        | `OSVA_SIDECAR_CLI_PROVIDER`                    | `fixture` \| `gemini` \| `codex` \| `claude`                                       |
+| Sidecar        | `OSVA_SIDECAR_*_BINARY` + entrypoint wrapper   | Points vendor providers at packed fixture scripts (no live vendor APIs)            |
+| Sidecar        | `OSVA_SIDECAR_WORKSPACE_ROOT`                  | Isolated volume for CLI cwd                                                        |
+| Sidecar        | `OSVA_SIDECAR_AUTH_SECRET`                     | Optional Bearer auth on `/execute` (hermetic tests + optional deployment scenario) |
+| Agent manifest | `runtime.endpoint`                             | Must match sidecar URL on Compose network                                          |
+| Artifacts      | A1.4 Azure registered driver                   | Cross-process artifact persistence for RunAttempt output                           |
 
 SSRF protections in OSVA core remain enabled; acceptance does **not** disable them globally—only the documented private-network allow flag for the sidecar subnet.
 

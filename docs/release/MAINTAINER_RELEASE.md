@@ -4,11 +4,11 @@ Independent npm packages under `@osva-ai/*`. **Publication is manual** via GitHu
 
 ## Packages
 
-| npm package                        | Directory                      | Initial version |
-| ---------------------------------- | ------------------------------ | --------------- |
-| `@osva-ai/adapter-artifact-memory` | `packages/artifact-memory`     | `0.1.0`         |
-| `@osva-ai/adapter-artifact-azure`  | `packages/artifact-azure`      | `0.1.0`         |
-| `@osva-ai/runtime-cli-sidecar`     | `packages/runtime-cli-sidecar` | `0.1.0`         |
+| npm package                        | Directory                      | Version in `package.json` |
+| ---------------------------------- | ------------------------------ | ------------------------- |
+| `@osva-ai/adapter-artifact-memory` | `packages/artifact-memory`     | `0.1.1` (A3 / rc.4)       |
+| `@osva-ai/adapter-artifact-azure`  | `packages/artifact-azure`      | `0.1.1` (A3 / rc.4)       |
+| `@osva-ai/runtime-cli-sidecar`     | `packages/runtime-cli-sidecar` | `0.1.0` (first publish)   |
 
 Versions are **independent** unless a release note documents a coordinated bump.
 
@@ -27,9 +27,9 @@ For the CLI runtime sidecar:
 pnpm test:release-readiness:a2-6
 ```
 
-This runs `release-readiness.mjs --require-a25` (Docker + OSVA RC3 worker acceptance required).
+This runs `release-readiness.mjs --require-a25` (Docker + OSVA `v1.1.0-rc.4` worker acceptance required).
 
-Optional higher-level gate (Docker + OSVA `v1.1.0-rc.3`):
+Optional higher-level gate (Docker + OSVA `v1.1.0-rc.4`):
 
 ```bash
 node scripts/acceptance/a1-4/run.mjs
@@ -75,37 +75,37 @@ If neither trusted publishing nor `NPM_TOKEN` is configured, the publish step fa
 
 ## Dist-tag policy
 
-| Tag      | Use case                                                                   |
-| -------- | -------------------------------------------------------------------------- |
-| **`rc`** | **Default in workflow.** First public **`0.1.0`** while OSVA uses RC3.     |
-| `latest` | Stable default install tag; requires typing **`YES`** in `confirm_latest`. |
-| `next`   | Pre-release channel                                                        |
-| `beta`   | Beta channel                                                               |
-| `alpha`  | Alpha channel                                                              |
+| Tag      | Use case                                                                       |
+| -------- | ------------------------------------------------------------------------------ |
+| **`rc`** | **Default in workflow.** Pre-stable channel while OSVA ships **`1.1.0-rc.4`**. |
+| `latest` | Stable default install tag; requires typing **`YES`** in `confirm_latest`.     |
+| `next`   | Pre-release channel                                                            |
+| `beta`   | Beta channel                                                                   |
+| `alpha`  | Alpha channel                                                                  |
 
 `npm dist-tag add` is **not** run by this workflow except via `npm publish --tag`. Accidental `latest` is blocked unless `confirm_latest: YES`.
 
 Consumers pinning contracts:
 
 ```bash
-npm install @osva-ai/adapter-artifact-azure@0.1.0 @osva-ai/contracts@1.1.0-rc.3
+npm install @osva-ai/adapter-artifact-azure@0.1.1 @osva-ai/contracts@1.1.0-rc.4
 ```
 
-## First public publication procedure
+## Publication procedure (per package)
 
-1. Merge release-prep PR to **`main`** with version **`0.1.0`** in the target `package.json` (unchanged unless documented).
-2. Confirm npm 404: `npm view @osva-ai/adapter-artifact-azure` (repeat per package).
-3. Run **`pnpm verify:a1-5`** locally or wait for **CI** on `main`.
-4. (Optional) Run **A1.4** deployment acceptance.
+1. Merge release-prep PR to **`main`** with the target version in that package’s `package.json` (artifact adapters **`0.1.1`** for A3; sidecar remains **`0.1.0`** until first publish).
+2. Confirm registry state: `npm view @osva-ai/<package> version` (404 only for never-published packages such as **`runtime-cli-sidecar`**).
+3. Run **`pnpm verify:a1-5`** (artifact adapters) and/or **`pnpm test:release-readiness:a2-6`** (sidecar) locally or wait for **CI** on `main`.
+4. (Optional) Run **A1.4** / **A2.5** deployment acceptance.
 5. GitHub → **Actions → Publish npm package → Run workflow**:
-   - Branch: **`main`** (or tag **`v0.1.0`** after tagging that commit).
-   - **package:** one adapter only.
-   - **expected_version:** `0.1.0`
-   - **dist_tag:** `rc` (recommended first).
+   - Branch: **`main`** (or tag **`v{expected_version}`** after tagging that commit).
+   - **package:** one package only.
+   - **expected_version:** must match `package.json` (e.g. **`0.1.1`** for artifact adapters, **`0.1.0`** for sidecar first publish).
+   - **dist_tag:** `rc` (recommended).
    - **confirm_latest:** leave empty unless using `latest`.
 6. Approve the **`npm-publish`** environment deployment.
 7. Workflow verifies tarball, publishes **one** package directory, then **post-publication registry check**.
-8. Repeat steps 5–7 for the second adapter if needed (independent versions).
+8. Repeat steps 5–7 for other packages as needed (independent versions).
 
 ## Workflow security summary
 
@@ -139,7 +139,7 @@ npm view @osva-ai/adapter-artifact-azure dist-tags --json
 Verify tarball contents once:
 
 ```bash
-npm pack @osva-ai/adapter-artifact-azure@0.1.0 --dry-run
+npm pack @osva-ai/adapter-artifact-azure@0.1.1 --dry-run
 ```
 
 ## Failure recovery and partial publication

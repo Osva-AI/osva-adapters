@@ -44,7 +44,7 @@ const PACKAGES = [
   },
 ];
 
-const OFFICIAL_CONTRACTS_VERSION = "1.1.0-rc.3";
+const OFFICIAL_CONTRACTS_VERSION = "1.1.0-rc.4";
 
 function run(command, args, options = {}) {
   const useShell =
@@ -82,8 +82,11 @@ async function main() {
     contractsVersion: OFFICIAL_CONTRACTS_VERSION,
     packages: [],
     npmAvailability: {
-      "@osva-ai/adapter-artifact-memory": "not published (404 at audit)",
-      "@osva-ai/adapter-artifact-azure": "not published (404 at audit)",
+      "@osva-ai/adapter-artifact-memory":
+        "0.1.0 published; workspace targets 0.1.1 (A3 / rc.4)",
+      "@osva-ai/adapter-artifact-azure":
+        "0.1.0 published; workspace targets 0.1.1 (A3 / rc.4)",
+      "@osva-ai/runtime-cli-sidecar": "not published (404)",
     },
     recommendation: "READY",
   };

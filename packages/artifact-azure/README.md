@@ -6,7 +6,7 @@
 
 ## Registration
 
-Install into the OSVA deployment image alongside **`@osva-ai/contracts@1.1.0-rc.3`** (npm `rc` dist-tag), then use the `registered` artifact storage driver:
+Install into the OSVA deployment image alongside **`@osva-ai/contracts@1.1.0-rc.4`** (npm `rc` dist-tag), then use the `registered` artifact storage driver:
 
 ```bash
 export OSVA_ARTIFACT_STORAGE_DRIVER=registered
@@ -80,7 +80,7 @@ pnpm --filter @osva-ai/adapter-artifact-azure test:integration
 ## Install (npm)
 
 ```bash
-npm install @osva-ai/adapter-artifact-azure @osva-ai/contracts@1.1.0-rc.3
+npm install @osva-ai/adapter-artifact-azure @osva-ai/contracts@1.1.0-rc.4
 ```
 
 Requires Node.js `>=24`. See [COMPATIBILITY.md](../../COMPATIBILITY.md) and [MAINTAINER_RELEASE.md](../../docs/release/MAINTAINER_RELEASE.md) for release pinning.

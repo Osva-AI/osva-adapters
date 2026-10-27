@@ -6,21 +6,21 @@
 
 ## Slice checklist
 
-| Slice | Description | Status |
-| ----- | ----------- | ------ |
-| Phase 0 | Source/contract audit, OSVA REMOTE_HTTP wiring | **Done** |
-| A2.5.1 | Deployment harness design + Compose topology | **Done** |
-| A2.5.2 | Real OSVA worker → sidecar → fixture execution | **Done** |
-| A2.5.3 | Gemini / Codex / Claude fixture deployment matrix | **Done** |
-| A2.5.4 | Lifecycle (restart, dedupe, failure) | **Done** (subset; see final report) |
-| A2.5.5 | Security negative tests | **Done** (unit + deployment HTTP) |
-| A2.5.6 | Evidence + CLI_PROVIDER_CONFORMANCE matrix | **Done** |
-| A2.6.1 | Public package review | **Done** |
-| A2.6.2 | External consumer + pack verification | **Done** |
-| A2.6.3 | CI + publish workflow + OCI Dockerfile | **Done** |
-| A2.6.4 | Operator documentation | **Done** |
-| A2.6.5 | Release security gate (Zod GHSA) | **Done** (publication BLOCKED) |
-| A2.6.6 | Manual release handoff | **Done** (no publish executed) |
+| Slice   | Description                                       | Status                              |
+| ------- | ------------------------------------------------- | ----------------------------------- |
+| Phase 0 | Source/contract audit, OSVA REMOTE_HTTP wiring    | **Done**                            |
+| A2.5.1  | Deployment harness design + Compose topology      | **Done**                            |
+| A2.5.2  | Real OSVA worker → sidecar → fixture execution    | **Done**                            |
+| A2.5.3  | Gemini / Codex / Claude fixture deployment matrix | **Done**                            |
+| A2.5.4  | Lifecycle (restart, dedupe, failure)              | **Done** (subset; see final report) |
+| A2.5.5  | Security negative tests                           | **Done** (unit + deployment HTTP)   |
+| A2.5.6  | Evidence + CLI_PROVIDER_CONFORMANCE matrix        | **Done**                            |
+| A2.6.1  | Public package review                             | **Done**                            |
+| A2.6.2  | External consumer + pack verification             | **Done**                            |
+| A2.6.3  | CI + publish workflow + OCI Dockerfile            | **Done**                            |
+| A2.6.4  | Operator documentation                            | **Done**                            |
+| A2.6.5  | Release security gate (Zod GHSA)                  | **Done** (publication BLOCKED)      |
+| A2.6.6  | Manual release handoff                            | **Done** (no publish executed)      |
 
 ## Phase 0 notes
 
@@ -30,11 +30,11 @@
 
 ## Verification executed (this run)
 
-| Command | Result |
-| ------- | ------ |
-| `pnpm --filter @osva-ai/runtime-cli-sidecar test` | **PASS** (43 tests) |
-| `node scripts/acceptance/a2-6/release-readiness.mjs` | **PASS** (npm publication BLOCKED on Zod) |
-| `node scripts/acceptance/a2-5/run.mjs` (Docker, `OSVA_A25_SKIP_BASE_BUILD=1`) | **PASS** |
+| Command                                                                       | Result                                    |
+| ----------------------------------------------------------------------------- | ----------------------------------------- |
+| `pnpm --filter @osva-ai/runtime-cli-sidecar test`                             | **PASS** (43 tests)                       |
+| `node scripts/acceptance/a2-6/release-readiness.mjs`                          | **PASS** (npm publication BLOCKED on Zod) |
+| `node scripts/acceptance/a2-5/run.mjs` (Docker, `OSVA_A25_SKIP_BASE_BUILD=1`) | **PASS**                                  |
 
 ## Files added (A2.5 / A2.6 slice)
 

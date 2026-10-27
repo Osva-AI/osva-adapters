@@ -16,6 +16,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { captureComposeFailureDiagnostics } from "../lib/compose-failure-diagnostics.mjs";
 import { pollUntil } from "../a1-4/lib/poll.mjs";
 import { run, runCapture } from "../a1-4/lib/shell.mjs";
 
@@ -28,9 +29,11 @@ const COMPOSE_FILE = path.join(DOCKER_DIR, "compose.yml");
 const ENV_FILE = path.join(DOCKER_DIR, ".env");
 const ENV_EXAMPLE = path.join(DOCKER_DIR, ".env.example");
 
-const OSVA_RC3_TAG = "v1.1.0-rc.3";
-const OSVA_RC3_COMMIT = "744c1bbd8f968bc8c0293de5372fb9e59964286c";
-const BASE_IMAGE = "osva:1.1.0-rc.3-a25-base";
+const OSVA_RC_TAG = "v1.1.0-rc.4";
+const OSVA_RC_COMMIT = "cd38eea46b8ee44bb099ccf307818cfcd348f50b";
+const KEEP_COMPOSE_ON_FAILURE =
+  process.env.OSVA_A25_KEEP_COMPOSE_ON_FAILURE === "1";
+const BASE_IMAGE = "osva:1.1.0-rc.4-a25-base";
 const ADAPTER_IMAGE = "osva-a25-with-azure:local";
 const SIDECAR_IMAGE = "osva-a25-cli-sidecar:local";
 
@@ -39,8 +42,8 @@ const CAPABILITY_TOKEN_PROBE = "a25-capability-token-probe-value";
 const evidence = {
   slice: "A2.5",
   schemaVersion: 1,
-  osvaTag: OSVA_RC3_TAG,
-  osvaCommit: OSVA_RC3_COMMIT,
+  osvaTag: OSVA_RC_TAG,
+  osvaCommit: OSVA_RC_COMMIT,
   sidecarPackage: "@osva-ai/runtime-cli-sidecar",
   sidecarVersion: "0.1.0",
   runtimeProtocolVersion: "1",
@@ -81,17 +84,18 @@ async function ensureEnvFile() {
 }
 
 async function resolveOsvaSource() {
-  const configured = process.env.OSVA_RC3_SOURCE?.trim();
+  const configured =
+    process.env.OSVA_RC4_SOURCE?.trim() || process.env.OSVA_RC3_SOURCE?.trim();
   if (configured) {
     return path.resolve(configured);
   }
-  const cloneRoot = await mkdtemp(path.join(os.tmpdir(), "osva-rc3-src-"));
+  const cloneRoot = await mkdtemp(path.join(os.tmpdir(), "osva-rc4-src-"));
   run("git", [
     "clone",
     "--depth",
     "1",
     "--branch",
-    OSVA_RC3_TAG,
+    OSVA_RC_TAG,
     "https://github.com/Osva-AI/osva.git",
     cloneRoot,
   ]);
@@ -109,7 +113,9 @@ async function packAdapter() {
   );
   run("pnpm", ["pack", "--pack-destination", packDir], { cwd: ADAPTER_DIR });
   const { readdir } = await import("node:fs/promises");
-  const tgzName = (await readdir(packDir)).find((name) => name.endsWith(".tgz"));
+  const tgzName = (await readdir(packDir)).find((name) =>
+    name.endsWith(".tgz"),
+  );
   if (!tgzName) {
     throw new Error("Adapter pack did not produce a tarball.");
   }
@@ -133,10 +139,14 @@ async function packSidecar() {
     .digest("hex")
     .slice(0, 12);
 
-  const packDir = await mkdtemp(path.join(os.tmpdir(), "osva-a25-sidecar-pack-"));
+  const packDir = await mkdtemp(
+    path.join(os.tmpdir(), "osva-a25-sidecar-pack-"),
+  );
   run("pnpm", ["pack", "--pack-destination", packDir], { cwd: SIDECAR_DIR });
   const { readdir } = await import("node:fs/promises");
-  const tgzName = (await readdir(packDir)).find((name) => name.endsWith(".tgz"));
+  const tgzName = (await readdir(packDir)).find((name) =>
+    name.endsWith(".tgz"),
+  );
   if (!tgzName) {
     throw new Error("Sidecar pack did not produce a tarball.");
   }
@@ -148,23 +158,23 @@ async function packSidecar() {
 }
 
 function buildImages(osvaSource) {
-  const ghcrRc3 = "ghcr.io/osva-ai/osva:1.1.0-rc.3";
+  const ghcrRc = "ghcr.io/osva-ai/osva:1.1.0-rc.4";
   let baseFromRegistry = false;
   try {
-    runCapture("docker", ["manifest", "inspect", ghcrRc3]);
+    runCapture("docker", ["manifest", "inspect", ghcrRc]);
     baseFromRegistry = true;
   } catch {
     baseFromRegistry = false;
   }
 
   if (baseFromRegistry) {
-    evidence.deploymentProvenance.baseImage = ghcrRc3;
-    evidence.deploymentProvenance.baseImageProvenance = "ghcr-published-rc3";
-    run("docker", ["tag", ghcrRc3, BASE_IMAGE]);
+    evidence.deploymentProvenance.baseImage = ghcrRc;
+    evidence.deploymentProvenance.baseImageProvenance = "ghcr-published-rc4";
+    run("docker", ["tag", ghcrRc, BASE_IMAGE]);
   } else {
     evidence.deploymentProvenance.baseImage = BASE_IMAGE;
     evidence.deploymentProvenance.baseImageProvenance =
-      "local-docker-build-from-osva-rc3-tag";
+      "local-docker-build-from-osva-rc4-tag";
     run("docker", [
       "build",
       "-t",
@@ -202,6 +212,35 @@ function composeDown() {
   run("docker", [...composeArgs(["down", "-v", "--remove-orphans"])], {
     cwd: DOCKER_DIR,
   });
+}
+
+function composeDownUnlessKept(acceptanceFailed) {
+  if (acceptanceFailed && KEEP_COMPOSE_ON_FAILURE) {
+    console.error(
+      "OSVA_A25_KEEP_COMPOSE_ON_FAILURE=1 — leaving Compose stack up for inspection.",
+    );
+    return;
+  }
+  composeDown();
+}
+
+async function captureFailureDiagnostics(phase, error) {
+  try {
+    evidence.failureDiagnostics = await captureComposeFailureDiagnostics({
+      composeFile: COMPOSE_FILE,
+      envFile: ENV_FILE,
+      cwd: DOCKER_DIR,
+      slice: "A2.5",
+      phase,
+      error,
+      evidenceDir: path.join(SCRIPT_DIR, "evidence"),
+    });
+  } catch (diagError) {
+    evidence.failureDiagnostics = {
+      phase,
+      captureError: String(diagError),
+    };
+  }
 }
 
 function composeUp(extraEnv = {}) {
@@ -418,7 +457,11 @@ async function workerFailureScenario(baseUrl, session, provider) {
     agentKey,
   );
   const failScenario =
-    provider === "fixture" ? "fail" : provider === "gemini" ? "fail-exit" : "fail-exit";
+    provider === "fixture"
+      ? "fail"
+      : provider === "gemini"
+        ? "fail-exit"
+        : "fail-exit";
   const result = await executeRun(baseUrl, session, agentId, agentVersionId, {
     ...runInputForProvider(provider, failScenario),
   });
@@ -486,7 +529,10 @@ async function directHttpSecurityScenarios(port, provider = "gemini") {
   const conflictB = await postSidecarExecute(port, {
     ...baseBody,
     executionId: "a25-conflict-id",
-    input: runInputForProvider(provider, provider === "fixture" ? "fail" : "fail-exit"),
+    input: runInputForProvider(
+      provider,
+      provider === "fixture" ? "fail" : "fail-exit",
+    ),
   });
   if (
     conflictA.json?.outcome !== "SUCCEEDED" ||
@@ -567,9 +613,7 @@ function assertAllScenariosPassed() {
   if (bad.length === 0) {
     return;
   }
-  const summary = bad
-    .map((s) => `${s.name} (${s.status})`)
-    .join("; ");
+  const summary = bad.map((s) => `${s.name} (${s.status})`).join("; ");
   throw new Error(`A2.5 scenarios not all PASS: ${summary}`);
 }
 
@@ -646,8 +690,18 @@ async function main() {
   }
 
   composeDown();
+  let acceptanceFailed = false;
+  let stackStarted = false;
   try {
-    composeUp();
+    try {
+      composeUp();
+    } catch (composeError) {
+      acceptanceFailed = true;
+      stackStarted = true;
+      await captureFailureDiagnostics("compose-up-wait", composeError);
+      throw composeError;
+    }
+    stackStarted = true;
     const session = await bootstrapInstallation();
     const webPort = await readWebPort();
     const sidecarPort = await readSidecarHostPort();
@@ -677,20 +731,30 @@ async function main() {
       cwd: DOCKER_DIR,
     });
     await pollUntil("sidecar after restart", async () => {
-      const res = await fetch(
-        `http://127.0.0.1:${sidecarPort}/health/ready`,
-      );
+      const res = await fetch(`http://127.0.0.1:${sidecarPort}/health/ready`);
       return res.ok;
     });
     recordScenario("Sidecar restart recovery", "pass");
+  } catch (error) {
+    acceptanceFailed = true;
+    await captureFailureDiagnostics("acceptance-scenario", error);
+    throw error;
   } finally {
-    try {
-      composeDown();
-      recordScenario("Cleanup compose stack", "pass");
-    } catch (cleanupError) {
-      recordScenario("Cleanup compose stack", "fail", {
-        error: String(cleanupError),
-      });
+    if (stackStarted) {
+      try {
+        composeDownUnlessKept(acceptanceFailed);
+        if (acceptanceFailed && KEEP_COMPOSE_ON_FAILURE) {
+          recordScenario("Cleanup compose stack", "skip", {
+            reason: "OSVA_A25_KEEP_COMPOSE_ON_FAILURE=1",
+          });
+        } else {
+          recordScenario("Cleanup compose stack", "pass");
+        }
+      } catch (cleanupError) {
+        recordScenario("Cleanup compose stack", "fail", {
+          error: String(cleanupError),
+        });
+      }
     }
     await writeEvidenceReport();
   }
@@ -703,8 +767,9 @@ main().catch(async (error) => {
   recordScenario("A2.5 runner", "fail", {
     error: error instanceof Error ? error.message : String(error),
   });
+  await captureFailureDiagnostics("runner", error);
   try {
-    composeDown();
+    composeDownUnlessKept(true);
   } catch {
     // ignore
   }

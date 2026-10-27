@@ -2,7 +2,7 @@
 # Installs a packed @osva-ai/adapter-artifact-azure tarball into the OSVA deployment
 # image so Node can resolve OSVA_ARTIFACT_BLOB_STORE_REGISTER_MODULE from web/worker/knowledge-worker.
 
-ARG OSVA_BASE_IMAGE=osva:1.1.0-rc.3-a14-base
+ARG OSVA_BASE_IMAGE=osva:1.1.0-rc.4-a14-base
 FROM ${OSVA_BASE_IMAGE}
 
 USER root
