@@ -6,7 +6,7 @@ WORKDIR /src
 COPY package.json tsconfig.json ./
 COPY src ./src
 RUN npm install --no-fund --no-audit \
-  && npm install @osva-ai/contracts@1.1.0-rc.3 @osva-ai/runtime-protocol@1.1.0-rc.3 @osva-ai/sdk@1.1.0-rc.3 --no-save \
+  && npm install @osva-ai/contracts@1.1.0-rc.4 @osva-ai/runtime-protocol@1.1.0-rc.4 @osva-ai/sdk@1.1.0-rc.4 --no-save \
   && npx tsc -p tsconfig.json
 
 FROM node:24-bookworm-slim
@@ -15,9 +15,9 @@ COPY --from=build /src/dist ./dist
 COPY --from=build /src/package.json ./package.json
 COPY fixtures ./fixtures
 RUN npm install --omit=dev --no-fund --no-audit \
-    @osva-ai/contracts@1.1.0-rc.3 \
-    @osva-ai/runtime-protocol@1.1.0-rc.3 \
-    @osva-ai/sdk@1.1.0-rc.3 \
+    @osva-ai/contracts@1.1.0-rc.4 \
+    @osva-ai/runtime-protocol@1.1.0-rc.4 \
+    @osva-ai/sdk@1.1.0-rc.4 \
   && mkdir -p /workspace \
   && chown -R node:node /app /workspace
 

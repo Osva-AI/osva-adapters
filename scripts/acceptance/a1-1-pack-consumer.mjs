@@ -13,7 +13,7 @@ const REPO_ROOT = path.resolve(
 const ADAPTER_PACKAGE_DIR = path.join(REPO_ROOT, "packages", "artifact-memory");
 
 /** Official npm release consumed by adapters (unmodified registry tarball). */
-const OFFICIAL_CONTRACTS_VERSION = "1.1.0-rc.3";
+const OFFICIAL_CONTRACTS_VERSION = "1.1.0-rc.4";
 
 function run(command, args, options = {}) {
   const useShell =

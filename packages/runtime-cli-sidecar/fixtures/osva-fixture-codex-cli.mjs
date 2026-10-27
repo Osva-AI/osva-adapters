@@ -90,7 +90,9 @@ async function main() {
       emit({ type: "turn.completed", usage: {} });
       return;
     case "partial-chunks":
-      process.stdout.write('{"type":"turn.started"}\n{"type":"item.completed","item":{"id":"x","type":"agent_message","text":"part');
+      process.stdout.write(
+        '{"type":"turn.started"}\n{"type":"item.completed","item":{"id":"x","type":"agent_message","text":"part',
+      );
       await sleep(50);
       process.stdout.write('-ial"}}\n');
       emit({ type: "turn.completed", usage: {} });

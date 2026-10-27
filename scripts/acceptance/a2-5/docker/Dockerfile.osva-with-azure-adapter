@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Same as A1.4 — installs packed @osva-ai/adapter-artifact-azure into OSVA RC3 image.
 
-ARG OSVA_BASE_IMAGE=osva:1.1.0-rc.3-a25-base
+ARG OSVA_BASE_IMAGE=osva:1.1.0-rc.4-a25-base
 FROM ${OSVA_BASE_IMAGE}
 
 USER root

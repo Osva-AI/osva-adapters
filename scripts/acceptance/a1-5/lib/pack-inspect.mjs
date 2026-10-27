@@ -93,9 +93,9 @@ export async function inspectAdapterTarball(packageName, tgzPath) {
     }
   }
 
-  if (deps["@osva-ai/contracts"] !== "1.1.0-rc.3") {
+  if (deps["@osva-ai/contracts"] !== "1.1.0-rc.4") {
     errors.push(
-      `Expected @osva-ai/contracts 1.1.0-rc.3 in packed manifest, got ${String(deps["@osva-ai/contracts"])}`,
+      `Expected @osva-ai/contracts 1.1.0-rc.4 in packed manifest, got ${String(deps["@osva-ai/contracts"])}`,
     );
   }
 

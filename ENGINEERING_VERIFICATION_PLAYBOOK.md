@@ -49,7 +49,7 @@ pnpm verify:a1-4   # OSVA deployment acceptance (Docker + Azurite; opt-in heavy)
 pnpm verify:a1-5   # Release readiness (pack + external consumer; no npm publish)
 ```
 
-A1.4 deployment acceptance requires Docker and an OSVA `v1.1.0-rc.3` source tree (or ephemeral clone). See [scripts/acceptance/a1-4/README.md](./scripts/acceptance/a1-4/README.md).
+A1.4 deployment acceptance requires Docker and an OSVA `v1.1.0-rc.4` source tree (or ephemeral clone). See [scripts/acceptance/a1-4/README.md](./scripts/acceptance/a1-4/README.md).
 
 A1.5 release readiness (`pnpm verify:a1-5`) intentionally skips whole-repo Prettier (use `pnpm format:check` separately when reformatting). See [scripts/acceptance/a1-5/README.md](./scripts/acceptance/a1-5/README.md).
 
@@ -67,7 +67,7 @@ pnpm verify:a2-5    # includes Docker deployment acceptance when available
 pnpm test:release-readiness:a2-6
 ```
 
-A2.5 requires Docker and OSVA `v1.1.0-rc.3` (see [scripts/acceptance/a2-5/README.md](./scripts/acceptance/a2-5/README.md)).
+A2.5 requires Docker and OSVA `v1.1.0-rc.4` (see [scripts/acceptance/a2-5/README.md](./scripts/acceptance/a2-5/README.md)).
 
 ## 7. Whitespace
 

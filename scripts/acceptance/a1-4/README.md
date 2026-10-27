@@ -1,13 +1,13 @@
 # A1.4 — OSVA deployment acceptance (Azure adapter + Azurite)
 
-Reproducible **cross-process** acceptance for `@osva-ai/adapter-artifact-azure` against **OSVA `v1.1.0-rc.3`** (`744c1bb…`), using a **packed local adapter tarball** (not a source copy) and a **shared Azurite** backend.
+Reproducible **cross-process** acceptance for `@osva-ai/adapter-artifact-azure` against **OSVA `v1.1.0-rc.4`** (`c70a0c7…`), using a **packed local adapter tarball** (not a source copy) and a **shared Azurite** backend.
 
 ## Prerequisites
 
 - Docker Compose v2
 - Node.js 24+, pnpm 12 (this repository)
-- ~8 GB disk for an OSVA RC3 image build (when GHCR `1.1.0-rc.3` is unavailable)
-- Optional: `OSVA_RC3_SOURCE` pointing at a checkout of [Osva-AI/osva](https://github.com/Osva-AI/osva) at tag `v1.1.0-rc.3`
+- ~8 GB disk for an OSVA RC4 image build (when GHCR `1.1.0-rc.4` is unavailable)
+- Optional: `OSVA_RC4_SOURCE` (or legacy `OSVA_RC3_SOURCE`) pointing at a checkout of [Osva-AI/osva](https://github.com/Osva-AI/osva) at tag `v1.1.0-rc.4`
 
 ## Quick run
 
@@ -35,7 +35,7 @@ Evidence is written to `scripts/acceptance/a1-4/evidence/latest.json`.
 
 ## Deployment model
 
-1. **Base image:** `ghcr.io/osva-ai/osva:1.1.0-rc.3` when published; otherwise `docker build` from `OSVA_RC3_SOURCE` / ephemeral clone at `v1.1.0-rc.3`.
+1. **Base image:** `ghcr.io/osva-ai/osva:1.1.0-rc.4` when published; otherwise `docker build` from `OSVA_RC4_SOURCE` / ephemeral clone at `v1.1.0-rc.4`.
 2. **Derived image:** `Dockerfile.osva-with-azure-adapter` unpacks the packed adapter into `/app/node_modules/@osva-ai/adapter-artifact-azure` (no pnpm workspace root mutation) so dynamic `import()` from `@osva/adapters-artifact-storage` resolves the operator module.
 3. **Compose project** `osva-a14` uses host port **18080** (web) and **11000** (Azurite) by default — isolated from a default OSVA dev stack on 8080/10000.
 
@@ -47,9 +47,20 @@ Remote HTTP agents call back into the worker capability server. In multi-contain
 OSVA_RUNTIME_CAPABILITY_HOST=0.0.0.0
 OSVA_RUNTIME_CAPABILITY_PORT=44995
 OSVA_RUNTIME_CAPABILITY_BASE_URL=http://worker:44995
+OSVA_RUNTIME_CAPABILITY_ALLOW_PUBLIC_BIND=true
 ```
 
-so sidecars such as the acceptance `fake-runtime` reach the worker on the Docker network (not `127.0.0.1` inside another container).
+OSVA **RC4** rejects `0.0.0.0` capability binds unless `OSVA_RUNTIME_CAPABILITY_ALLOW_PUBLIC_BIND=true` (acceptance harness only — not production). This lets sidecars such as the acceptance `fake-runtime` reach the worker on the Docker network (not `127.0.0.1` inside another container).
+
+## Failure diagnosis
+
+On Compose failure, the runner writes sanitized diagnostics to `scripts/acceptance/a1-4/evidence/docker-failure-diagnostics.json` before teardown.
+
+To keep the stack running after a failure:
+
+```bash
+OSVA_A14_KEEP_COMPOSE_ON_FAILURE=1 node scripts/acceptance/a1-4/run.mjs
+```
 
 ## Operator configuration (production-shaped)
 
@@ -69,7 +80,7 @@ Install the adapter into the **same** deployment image filesystem as OSVA (`/app
 - **Test-only** Azurite credentials in `.env.example`; never use devstore keys in production.
 - **Registered adapters run in-process** with full process privileges (OSVA M12.4.x model).
 - **Real Azure** acceptance is out of scope here; use the same env vars against a provisioned storage account in your environment.
-- **RC3 GHCR tag** may trail npm `@osva-ai/contracts@1.1.0-rc.3`; this harness builds from the git tag when the OCI manifest is missing.
+- **RC4 GHCR tag** may trail npm `@osva-ai/contracts@1.1.0-rc.4`; this harness builds from the git tag when the OCI manifest is missing.
 
 ## Manual compose (debug)
 
@@ -78,11 +89,4 @@ cd scripts/acceptance/a1-4/docker
 docker compose --env-file .env up -d --wait
 docker compose --profile bootstrap run --rm bootstrap
 # API on http://127.0.0.1:18080
-docker compose down -v
-```
-
-Module resolution probe (matches OSVA entrypoint cwd):
-
-```bash
-docker compose exec -w /app/apps/web/dist web node /acceptance/probe-module-resolution.mjs
 ```

@@ -29,9 +29,9 @@ async function verifySidecarPackExports(tgzPath) {
         "install",
         "--no-save",
         tgzPath,
-        "@osva-ai/contracts@1.1.0-rc.3",
-        "@osva-ai/sdk@1.1.0-rc.3",
-        "@osva-ai/runtime-protocol@1.1.0-rc.3",
+        "@osva-ai/contracts@1.1.0-rc.4",
+        "@osva-ai/sdk@1.1.0-rc.4",
+        "@osva-ai/runtime-protocol@1.1.0-rc.4",
       ],
       { cwd: workRoot, stdio: "inherit", shell: process.platform === "win32" },
     );

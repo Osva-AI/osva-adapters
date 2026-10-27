@@ -10,7 +10,7 @@ Reference **A1.1** implementation of `ArtifactBlobStore` backed by a process-loc
 npm install @osva-ai/adapter-artifact-memory @osva-ai/contracts@rc
 ```
 
-Requires Node.js `>=24`. This adapter is tested against **`@osva-ai/contracts@1.1.0-rc.3`** from npm.
+Requires Node.js `>=24`. This adapter is tested against **`@osva-ai/contracts@1.1.0-rc.4`** from npm.
 
 ## Registration
 
@@ -30,7 +30,7 @@ export OSVA_ARTIFACT_STORAGE_DRIVER=registered
 export OSVA_ARTIFACT_BLOB_STORE_REGISTER_MODULE="@osva-ai/adapter-artifact-memory"
 ```
 
-Install the package into the deployment image next to `@osva-ai/contracts@1.1.0-rc.3`. There is no runtime adapter discovery.
+Install the package into the deployment image next to `@osva-ai/contracts@1.1.0-rc.4`. There is no runtime adapter discovery.
 
 ## Behavior
 

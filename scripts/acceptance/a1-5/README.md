@@ -6,7 +6,7 @@ Repeatable **prepublication** verification for `@osva-ai/adapter-artifact-memory
 
 - Node.js `>=24`, pnpm `12.x`
 - Docker (for Azure external consumer smoke and Azurite integration in CI)
-- Network access to npm (official `@osva-ai/contracts@1.1.0-rc.3` tarball)
+- Network access to npm (official `@osva-ai/contracts@1.1.0-rc.4` tarball)
 
 ## Run
 
