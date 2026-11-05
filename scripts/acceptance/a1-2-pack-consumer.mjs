@@ -15,7 +15,7 @@ const REPO_ROOT = path.resolve(
 const ADAPTER_PACKAGE_DIR = path.join(REPO_ROOT, "packages", "artifact-azure");
 
 /** Official npm release consumed by adapters (unmodified registry tarball). */
-const OFFICIAL_CONTRACTS_VERSION = "1.1.0-rc.4";
+const OFFICIAL_CONTRACTS_VERSION = "1.1.4";
 
 const AZURITE_CONNECTION_STRING =
   "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;";

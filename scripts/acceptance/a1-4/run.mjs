@@ -19,6 +19,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { acquireOsvaRc4BaseImage } from "../lib/acquire-osva-rc4-base-image.mjs";
 import { captureComposeFailureDiagnostics } from "../lib/compose-failure-diagnostics.mjs";
 import { pollUntil } from "./lib/poll.mjs";
 import { run, runCapture } from "./lib/shell.mjs";
@@ -46,7 +47,7 @@ const evidence = {
   osvaTag: OSVA_RC_TAG,
   osvaCommit: OSVA_RC_COMMIT,
   adapterPackage: "@osva-ai/adapter-artifact-azure",
-  contractsVersion: "1.1.0-rc.4",
+  contractsVersion: "1.1.4",
   startedAt: new Date().toISOString(),
   scenarios: [],
   moduleResolution: [],
@@ -127,34 +128,26 @@ async function packAdapter() {
 }
 
 function buildImages(osvaSource) {
-  const ghcrRc = "ghcr.io/osva-ai/osva:1.1.0-rc.4";
-  let baseFromRegistry = false;
-  try {
-    runCapture("docker", ["manifest", "inspect", ghcrRc]);
-    baseFromRegistry = true;
-  } catch {
-    baseFromRegistry = false;
-  }
-
-  if (baseFromRegistry) {
-    evidence.deploymentProvenance.baseImage = ghcrRc;
-    evidence.deploymentProvenance.baseImageProvenance = "ghcr-published-rc4";
-    run("docker", ["tag", ghcrRc, BASE_IMAGE]);
-  } else {
-    evidence.deploymentProvenance.baseImage = BASE_IMAGE;
-    evidence.deploymentProvenance.baseImageProvenance =
-      "local-docker-build-from-osva-rc4-tag";
-    evidence.deploymentProvenance.osvaSource =
-      evidence.deploymentProvenance.osvaSource ?? osvaSource;
-    run("docker", [
-      "build",
-      "-t",
-      BASE_IMAGE,
-      "-f",
-      path.join(osvaSource, "Dockerfile"),
-      osvaSource,
-    ]);
-  }
+  const baseAcquisition = acquireOsvaRc4BaseImage({
+    localTag: BASE_IMAGE,
+    run,
+    runCapture,
+    buildFromSource: () => {
+      evidence.deploymentProvenance.osvaSource =
+        evidence.deploymentProvenance.osvaSource ?? osvaSource;
+      run("docker", [
+        "build",
+        "-t",
+        BASE_IMAGE,
+        "-f",
+        path.join(osvaSource, "Dockerfile"),
+        osvaSource,
+      ]);
+    },
+  });
+  evidence.deploymentProvenance.baseImage = baseAcquisition.baseImage;
+  evidence.deploymentProvenance.baseImageProvenance =
+    baseAcquisition.baseImageProvenance;
 
   evidence.deploymentProvenance.adapterImage = ADAPTER_IMAGE;
   run("docker", [

@@ -6,7 +6,7 @@ Repeatable **prepublication** verification for `@osva-ai/adapter-artifact-memory
 
 - Node.js `>=24`, pnpm `12.x`
 - Docker (for Azure external consumer smoke and Azurite integration in CI)
-- Network access to npm (official `@osva-ai/contracts@1.1.0-rc.4` tarball)
+- Network access to npm (official `@osva-ai/contracts@1.1.4` tarball)
 
 ## Run
 
@@ -36,7 +36,7 @@ Publish workflow uses **`prepublish-package.mjs`** for the selected package only
 2. `pnpm pack` each package and inspect tarball contents and dependency specifiers (no `catalog:` / `workspace:`, no `src/` or `test/` leaks).
 3. Resolve `createArtifactBlobStore` and `registeredArtifactBlobStoreModule` from a clean `npm install` of the tarball.
 4. Run A1.1 / A1.2 external pack-consumer scripts (registry contracts + smoke).
-5. Emit a sanitized JSON report on stdout and `evidence/latest.json` (gitignored).
+5. Emit a sanitized JSON report on stdout and `evidence/latest.json` (gitignored). Recommendation **`READY_NPM_PACK_GATES`** means pack/consumer checks only — not A1.4 Docker deployment acceptance.
 
 ## Higher-level gate (A1.4)
 

@@ -7,7 +7,7 @@ Includes **Gemini CLI**, **Codex CLI**, and **Claude Code** providers (A2.2–A2
 ## Install
 
 ```bash
-npm install @osva-ai/runtime-cli-sidecar @osva-ai/sdk@1.1.0-rc.4 @osva-ai/runtime-protocol@1.1.0-rc.4 @osva-ai/contracts@1.1.0-rc.4
+npm install @osva-ai/runtime-cli-sidecar @osva-ai/sdk@1.1.4 @osva-ai/runtime-protocol@1.1.4 @osva-ai/contracts@1.1.4
 ```
 
 ## Run
@@ -80,8 +80,9 @@ See [CLI_SIDECAR_SECURITY.md](../../docs/architecture/CLI_SIDECAR_SECURITY.md). 
 pnpm --filter @osva-ai/runtime-cli-sidecar test
 node scripts/acceptance/a2-1-pack-consumer.mjs
 node scripts/acceptance/a2-2-4-pack-consumer.mjs
-pnpm test:acceptance:a2-5    # Docker + OSVA RC3 worker E2E
-pnpm test:release-readiness:a2-6
+node scripts/acceptance/a2-6/release-readiness.mjs   # pack + audit (no Docker)
+pnpm test:acceptance:a2-5    # optional: Docker + OSVA worker E2E
+pnpm test:release-readiness:a2-6   # strict: includes --require-a25
 ```
 
 Live vendor smoke tests require operator credentials and are not part of default CI.
@@ -102,7 +103,7 @@ Live vendor smoke tests require operator credentials and are not part of default
 }
 ```
 
-4. Pin `@osva-ai/contracts@1.1.0-rc.4` (and matching SDK / runtime-protocol) in the deployment image.
+4. Pin `@osva-ai/contracts@1.1.4` (and matching SDK / runtime-protocol) in the deployment image.
 
 ## OCI image
 
@@ -116,4 +117,4 @@ Mount `/workspace`, set `OSVA_SIDECAR_CLI_PROVIDER`, and inject vendor credentia
 
 ## Release
 
-Prepublication gate: `pnpm test:release-readiness:a2-6`. npm publish remains **manual** via `.github/workflows/publish-package.yml`.
+Prepublication: `node scripts/acceptance/a2-6/release-readiness.mjs` (pack gates). **Strict** publication gate: `pnpm test:release-readiness:a2-6` (adds A2.5 Docker). npm publish remains **manual** via `.github/workflows/publish-package.yml`.

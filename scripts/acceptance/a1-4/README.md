@@ -80,7 +80,7 @@ Install the adapter into the **same** deployment image filesystem as OSVA (`/app
 - **Test-only** Azurite credentials in `.env.example`; never use devstore keys in production.
 - **Registered adapters run in-process** with full process privileges (OSVA M12.4.x model).
 - **Real Azure** acceptance is out of scope here; use the same env vars against a provisioned storage account in your environment.
-- **RC4 GHCR tag** may trail npm `@osva-ai/contracts@1.1.0-rc.4`; this harness builds from the git tag when the OCI manifest is missing.
+- **Worker image** stays on git tag `v1.1.0-rc.4` until a `v1.1.4` OSVA release exists; the harness installs packed adapters pinned to npm `@osva-ai/contracts@1.1.4`.
 
 ## Manual compose (debug)
 
