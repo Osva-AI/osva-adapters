@@ -44,7 +44,7 @@ const PACKAGES = [
   },
 ];
 
-const OFFICIAL_CONTRACTS_VERSION = "1.1.0-rc.4";
+const OFFICIAL_CONTRACTS_VERSION = "1.1.4";
 
 function run(command, args, options = {}) {
   const useShell =
@@ -83,12 +83,14 @@ async function main() {
     packages: [],
     npmAvailability: {
       "@osva-ai/adapter-artifact-memory":
-        "0.1.0 published; workspace targets 0.1.1 (A3 / rc.4)",
+        "0.1.0 published; workspace targets 0.1.2 (M19 / contracts 1.1.4)",
       "@osva-ai/adapter-artifact-azure":
-        "0.1.0 published; workspace targets 0.1.1 (A3 / rc.4)",
+        "0.1.0 published; workspace targets 0.1.2 (M19 / contracts 1.1.4)",
       "@osva-ai/runtime-cli-sidecar": "not published (404)",
     },
-    recommendation: "READY",
+    recommendation: "READY_NPM_PACK_GATES",
+    a1_4DeploymentAcceptance:
+      "Not run in this script; optional Docker gate: scripts/acceptance/a1-4/run.mjs",
   };
 
   const packDirs = [];
@@ -145,8 +147,6 @@ async function main() {
     }
 
     report.finishedAt = new Date().toISOString();
-    report.a1_4DeploymentAcceptance =
-      "Independent gate: scripts/acceptance/a1-4/run.mjs (not rerun in this script)";
 
     const blocked = report.packages.some(
       (p) => p.packInspect && !p.packInspect.ok,

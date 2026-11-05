@@ -46,7 +46,7 @@ const evidence = {
   osvaTag: OSVA_RC_TAG,
   osvaCommit: OSVA_RC_COMMIT,
   adapterPackage: "@osva-ai/adapter-artifact-azure",
-  contractsVersion: "1.1.0-rc.4",
+  contractsVersion: "1.1.4",
   startedAt: new Date().toISOString(),
   scenarios: [],
   moduleResolution: [],

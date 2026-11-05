@@ -24,7 +24,7 @@ const REPO_ROOT = path.resolve(
 
 const PACKAGE_NAME = "@osva-ai/runtime-cli-sidecar";
 const PACKAGE_DIR = path.join(REPO_ROOT, "packages", "runtime-cli-sidecar");
-const OFFICIAL_CONTRACTS_VERSION = "1.1.0-rc.4";
+const OFFICIAL_CONTRACTS_VERSION = "1.1.4";
 const ZOD_GHSA = "GHSA-mrhx-c7xc-m3w5";
 const KNOWN_VULNERABLE_ZOD = new Set(["4.6.5"]);
 
@@ -231,7 +231,10 @@ async function main() {
     npmPublicationState: "not executed (manual release)",
     recommendation: {
       implementationPr: "READY",
-      npmPublication: "READY",
+      npmPublication: cli.requireA25 ? "READY" : "READY_PACK_GATES_ONLY",
+      strictReleaseNote: cli.requireA25
+        ? undefined
+        : "Strict npm publication requires --require-a25 (A2.5 Docker) passing; not verified in this run.",
     },
     gates: {},
   };
@@ -255,8 +258,9 @@ async function main() {
     report.gates.a25Deployment = {
       ok: false,
       skipped: true,
-      note: "Pass --require-a25 for release gate (CI uses this flag)",
+      note: "Pass --require-a25 for strict release gate (pnpm test:release-readiness:a2-6)",
     };
+    report.recommendation.npmPublication = "READY_PACK_GATES_ONLY";
   }
 
   if (!cli.publicationGateOnly) {

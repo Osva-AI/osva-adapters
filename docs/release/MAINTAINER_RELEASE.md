@@ -4,11 +4,11 @@ Independent npm packages under `@osva-ai/*`. **Publication is manual** via GitHu
 
 ## Packages
 
-| npm package                        | Directory                      | Version in `package.json` |
-| ---------------------------------- | ------------------------------ | ------------------------- |
-| `@osva-ai/adapter-artifact-memory` | `packages/artifact-memory`     | `0.1.1` (A3 / rc.4)       |
-| `@osva-ai/adapter-artifact-azure`  | `packages/artifact-azure`      | `0.1.1` (A3 / rc.4)       |
-| `@osva-ai/runtime-cli-sidecar`     | `packages/runtime-cli-sidecar` | `0.1.0` (first publish)   |
+| npm package                        | Directory                      | Version in `package.json`       |
+| ---------------------------------- | ------------------------------ | ------------------------------- |
+| `@osva-ai/adapter-artifact-memory` | `packages/artifact-memory`     | `0.1.2` (M19 / contracts 1.1.4) |
+| `@osva-ai/adapter-artifact-azure`  | `packages/artifact-azure`      | `0.1.2` (M19 / contracts 1.1.4) |
+| `@osva-ai/runtime-cli-sidecar`     | `packages/runtime-cli-sidecar` | `0.1.0` (first publish)         |
 
 Versions are **independent** unless a release note documents a coordinated bump.
 
@@ -21,15 +21,21 @@ pnpm install --frozen-lockfile
 pnpm verify:a1-5
 ```
 
-For the CLI runtime sidecar:
+For the CLI runtime sidecar (pack / audit / unit only):
+
+```bash
+node scripts/acceptance/a2-6/release-readiness.mjs
+```
+
+**Strict** sidecar publication gate (includes A2.5 Docker + OSVA worker harness):
 
 ```bash
 pnpm test:release-readiness:a2-6
 ```
 
-This runs `release-readiness.mjs --require-a25` (Docker + OSVA `v1.1.0-rc.4` worker acceptance required).
+That script passes **`--require-a25`**. The default harness worker image is git tag **`v1.1.0-rc.4`**; npm adapters pin **`@osva-ai/contracts@1.1.4`**. The latest OSVA **platform** GitHub release is **`v1.1.1`** — distinct from npm contracts **1.1.4**.
 
-Optional higher-level gate (Docker + OSVA `v1.1.0-rc.4`):
+Optional deployment gates (Docker):
 
 ```bash
 node scripts/acceptance/a1-4/run.mjs
@@ -75,42 +81,43 @@ If neither trusted publishing nor `NPM_TOKEN` is configured, the publish step fa
 
 ## Dist-tag policy
 
-| Tag      | Use case                                                                       |
-| -------- | ------------------------------------------------------------------------------ |
-| **`rc`** | **Default in workflow.** Pre-stable channel while OSVA ships **`1.1.0-rc.4`**. |
-| `latest` | Stable default install tag; requires typing **`YES`** in `confirm_latest`.     |
-| `next`   | Pre-release channel                                                            |
-| `beta`   | Beta channel                                                                   |
-| `alpha`  | Alpha channel                                                                  |
+| Tag      | Use case                                                                                                                           |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **`rc`** | Pre-stable channel; consider **`latest`** once sidecar and artifact **`0.1.2`** are published with **`@osva-ai/contracts@1.1.4`**. |
+| `latest` | Stable default install tag; requires typing **`YES`** in `confirm_latest`.                                                         |
+| `next`   | Pre-release channel                                                                                                                |
+| `beta`   | Beta channel                                                                                                                       |
+| `alpha`  | Alpha channel                                                                                                                      |
 
 `npm dist-tag add` is **not** run by this workflow except via `npm publish --tag`. Accidental `latest` is blocked unless `confirm_latest: YES`.
 
 Consumers pinning contracts:
 
 ```bash
-npm install @osva-ai/adapter-artifact-azure@0.1.1 @osva-ai/contracts@1.1.0-rc.4
+npm install @osva-ai/adapter-artifact-azure@0.1.2 @osva-ai/contracts@1.1.4
 ```
 
 ## Publication procedure (per package)
 
-1. Merge release-prep PR to **`main`** with the target version in that package’s `package.json` (artifact adapters **`0.1.1`** for A3; sidecar remains **`0.1.0`** until first publish).
+1. Merge release-prep PR to **`main`** with the target version in that package’s `package.json` (artifact adapters **`0.1.2`** for M19; sidecar remains **`0.1.0`** until first publish).
 2. Confirm registry state: `npm view @osva-ai/<package> version` (404 only for never-published packages such as **`runtime-cli-sidecar`**).
-3. Run **`pnpm verify:a1-5`** (artifact adapters) and/or **`pnpm test:release-readiness:a2-6`** (sidecar) locally or wait for **CI** on `main`.
-4. (Optional) Run **A1.4** / **A2.5** deployment acceptance.
-5. GitHub → **Actions → Publish npm package → Run workflow**:
+3. Run **`pnpm verify:a1-5`** (artifact adapters) and/or sidecar **`node scripts/acceptance/a2-6/release-readiness.mjs`** locally or wait for **CI** on `main`.
+4. Before first sidecar publish or major promotion, run **`pnpm test:release-readiness:a2-6`** (`--require-a25`) and optionally **A1.4** / **A2.5** deployment acceptance.
+5. **`@osva-ai/runtime-cli-sidecar` first publish:** npm may require a **one-time** token publish before trusted publishing applies (see below).
+6. GitHub → **Actions → Publish npm package → Run workflow**:
    - Branch: **`main`** (or tag **`v{expected_version}`** after tagging that commit).
    - **package:** one package only.
-   - **expected_version:** must match `package.json` (e.g. **`0.1.1`** for artifact adapters, **`0.1.0`** for sidecar first publish).
+   - **expected_version:** must match `package.json` (e.g. **`0.1.2`** for artifact adapters, **`0.1.0`** for sidecar first publish).
    - **dist_tag:** `rc` (recommended).
    - **confirm_latest:** leave empty unless using `latest`.
-6. Approve the **`npm-publish`** environment deployment.
-7. Workflow verifies tarball, publishes **one** package directory, then **post-publication registry check**.
-8. Repeat steps 5–7 for other packages as needed (independent versions).
+7. Approve the **`npm-publish`** environment deployment.
+8. Workflow verifies tarball, publishes **one** package directory, then **post-publication registry check**.
+9. Repeat steps 6–8 for other packages as needed (**independent versions** — artifact **`0.1.2`** and sidecar **`0.1.0`** may ship on different days).
 
 ## Workflow security summary
 
 - Trigger: **`workflow_dispatch` only**.
-- Package choice: enum of the two adapters only.
+- Package choice: enum includes artifact adapters and **`@osva-ai/runtime-cli-sidecar`** (one package per workflow run).
 - Ref: **`main`** or semver tag **`v*.*.*`**; tag must equal **`v{expected_version}`**.
 - Checkout: pinned to **`github.sha`** with clean tree check.
 - Build / pack / inspect: **selected package only** (`prepublish-package.mjs`).
@@ -119,7 +126,7 @@ npm install @osva-ai/adapter-artifact-azure@0.1.1 @osva-ai/contracts@1.1.0-rc.4
 ## Rollback limitations
 
 - **Unpublish** is time-limited on npm and discouraged for public adapters.
-- Prefer **`npm deprecate @osva-ai/adapter-artifact-azure@0.1.0 "reason"`** and ship **`0.1.1`**.
+- Prefer **`npm deprecate @osva-ai/adapter-artifact-azure@0.1.0 "reason"`** and ship **`0.1.2`**.
 - Consumers must **pin** versions in deployment images; dist-tags alone are not enough for production.
 
 ## Post-publication registry verification
@@ -139,7 +146,7 @@ npm view @osva-ai/adapter-artifact-azure dist-tags --json
 Verify tarball contents once:
 
 ```bash
-npm pack @osva-ai/adapter-artifact-azure@0.1.1 --dry-run
+npm pack @osva-ai/adapter-artifact-azure@0.1.2 --dry-run
 ```
 
 ## Failure recovery and partial publication

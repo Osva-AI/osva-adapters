@@ -16,7 +16,7 @@ Provide production-oriented and reference implementations of OSVA infrastructure
 | [`@osva-ai/adapter-artifact-azure`](./packages/artifact-azure)   | **A1.2**           | Azure Blob Storage backend (operator credentials)         |
 | [`@osva-ai/runtime-cli-sidecar`](./packages/runtime-cli-sidecar) | **A2.1–A2.4**      | Runtime Protocol V1 sidecar + Gemini / Codex / Claude CLI |
 
-Both artifact adapters are published on npm (`0.1.0` initial; **`0.1.1`** pins `@osva-ai/contracts@1.1.0-rc.4` for A3). Publication is manual via GitHub Actions ([maintainer guide](./docs/release/MAINTAINER_RELEASE.md)).
+Both artifact adapters are published on npm (`0.1.0` initial; **`0.1.2`** pins `@osva-ai/contracts@1.1.4` for M19). Publication is manual via GitHub Actions ([maintainer guide](./docs/release/MAINTAINER_RELEASE.md)).
 
 Gemini CLI, Codex CLI, and Claude Code backends ship in `@osva-ai/runtime-cli-sidecar` (select via `OSVA_SIDECAR_CLI_PROVIDER`). Live vendor credentials are operator-managed; default CI uses hermetic CLI fixtures.
 
@@ -54,9 +54,9 @@ export OSVA_ARTIFACT_AZURE_CONNECTION_STRING="..."
 
 See [packages/artifact-azure/README.md](./packages/artifact-azure/README.md) for Azurite, semantics, and a Kubernetes example.
 
-## Deployment acceptance (A1.4)
+## Deployment acceptance (A1.4, optional)
 
-Cross-process OSVA + Azurite Compose harness (packed adapter install, web/worker/knowledge-worker):
+Cross-process OSVA + Azurite Compose harness (packed adapter install, web/worker/knowledge-worker). **Not required** for M19 npm pack gates; run before production cutover:
 
 ```bash
 node scripts/acceptance/a1-4/run.mjs
@@ -66,7 +66,7 @@ See [scripts/acceptance/a1-4/README.md](./scripts/acceptance/a1-4/README.md) and
 
 ## Release readiness (A1.5)
 
-Prepublication verification (pack, tarball inspect, external npm consumer, registration exports):
+Prepublication verification (pack, tarball inspect, external npm consumer, registration exports). Does **not** run A1.4/A2.5 Docker acceptance:
 
 ```bash
 pnpm verify:a1-5
@@ -85,7 +85,7 @@ pnpm verify:a2-1
 pnpm verify:a1-4
 ```
 
-Adapters declare **`@osva-ai/contracts@1.1.0-rc.4`** from npm (official `rc` dist-tag; no patched contracts).
+Adapters declare **`@osva-ai/contracts@1.1.4`** from npm (`latest` / `stable-candidate`; no patched contracts).
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md), [COMPATIBILITY.md](./COMPATIBILITY.md), and [ENGINEERING_VERIFICATION_PLAYBOOK.md](./ENGINEERING_VERIFICATION_PLAYBOOK.md).
 

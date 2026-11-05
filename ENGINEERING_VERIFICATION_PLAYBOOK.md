@@ -6,7 +6,7 @@ Use this checklist when landing adapter slices in **osva-adapters**. It mirrors 
 
 - List new/changed packages, scripts, docs, and lockfile/catalog updates.
 - Confirm scope stays within public `@osva-ai/contracts` ports (no OSVA core imports).
-- Note compatibility blockers (registry `@osva-ai/contracts` version, required public exports).
+- Note compatibility blockers (registry `@osva-ai/contracts@1.1.4` baseline, required public exports).
 
 ## 2. Formatting
 
@@ -63,11 +63,12 @@ pnpm --filter @osva-ai/runtime-cli-sidecar typecheck
 pnpm --filter @osva-ai/runtime-cli-sidecar build
 pnpm --filter @osva-ai/runtime-cli-sidecar test
 pnpm test:pack-consumer:a2-2-4
-pnpm verify:a2-5    # includes Docker deployment acceptance when available
-pnpm test:release-readiness:a2-6
+pnpm verify:a2-5    # optional Docker deployment acceptance
+node scripts/acceptance/a2-6/release-readiness.mjs   # pack + audit (no A2.5)
+pnpm test:release-readiness:a2-6   # strict: --require-a25
 ```
 
-A2.5 requires Docker and OSVA `v1.1.0-rc.4` (see [scripts/acceptance/a2-5/README.md](./scripts/acceptance/a2-5/README.md)).
+Adapters pin npm **`@osva-ai/contracts@1.1.4`**. OSVA **platform** release **`v1.1.1`** on GitHub is separate from npm contracts semver. A1.4/A2.5 harnesses default to worker tag **`v1.1.0-rc.4`** (see [COMPATIBILITY.md](./COMPATIBILITY.md)).
 
 ## 7. Whitespace
 
