@@ -4,11 +4,11 @@ Independent npm packages under `@osva-ai/*`. **Publication is manual** via GitHu
 
 ## Release candidates (M19)
 
-| npm package                        | Directory                      | Target version | Contracts line | Registry status (verify before publish)                  |
-| ---------------------------------- | ------------------------------ | -------------- | -------------- | -------------------------------------------------------- |
-| `@osva-ai/adapter-artifact-memory` | `packages/artifact-memory`     | **0.1.2**      | **1.1.4**      | **0.1.2** not published (latest **0.1.0**, rc **0.1.1**) |
-| `@osva-ai/adapter-artifact-azure`  | `packages/artifact-azure`      | **0.1.2**      | **1.1.4**      | **0.1.2** not published (latest **0.1.0**, rc **0.1.1**) |
-| `@osva-ai/runtime-cli-sidecar`     | `packages/runtime-cli-sidecar` | **0.1.0**      | **1.1.4**      | Package **404** (first publication)                      |
+| npm package                        | Directory                      | Target version | Contracts line | Registry status (M19 — verified **2026-11-06**)       |
+| ---------------------------------- | ------------------------------ | -------------- | -------------- | ----------------------------------------------------- |
+| `@osva-ai/adapter-artifact-memory` | `packages/artifact-memory`     | **0.1.2**      | **1.1.4**      | **Published** — **`latest`** and **`rc`** → **0.1.2** |
+| `@osva-ai/adapter-artifact-azure`  | `packages/artifact-azure`      | **0.1.2**      | **1.1.4**      | **Published** — **`latest`** and **`rc`** → **0.1.2** |
+| `@osva-ai/runtime-cli-sidecar`     | `packages/runtime-cli-sidecar` | **0.1.0**      | **1.1.4**      | **Published** @ **0.1.0** (first publication)         |
 
 Versions are **independent** unless a release note documents a coordinated bump.
 
@@ -159,7 +159,7 @@ npm install @osva-ai/adapter-artifact-azure@0.1.2 @osva-ai/contracts@1.1.4
    - **confirm_real_publish:** **`PUBLISH`**
 2. Approve the **`npm-publish`** environment deployment when prompted.
 3. **publish** job downloads the preflight tarball artifact and runs **`npm publish`** (OIDC or `NPM_TOKEN`).
-4. Post-step verifies `npm view <package>@<version>`.
+4. Post-step runs **`wait-for-npm-version.mjs`** (up to **3 minutes** of bounded polling) so transient npm **404** visibility after upload does not fail an otherwise successful publish. The workflow **never** retries **`npm publish`** automatically.
 5. Record **published**; repeat preflight/publish independently for other packages.
 
 ### Post-publication smoke (required)
