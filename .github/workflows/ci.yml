@@ -35,6 +35,8 @@ jobs:
           pnpm prettier --check \
             ".github/workflows/*.yml" \
             "scripts/acceptance/a1-5/**/*.{mjs,md}" \
+            "scripts/acceptance/lib/validate-publish-inputs.mjs" \
+            "scripts/acceptance/lib/publish-workflow-safety.test.mjs" \
             "docs/release/**/*.md"
 
       - name: Lint
@@ -77,6 +79,9 @@ jobs:
 
       - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
+
+      - name: Publish workflow safety regression
+        run: node scripts/acceptance/lib/publish-workflow-safety.test.mjs
 
       - name: Release readiness (A1.5)
         run: node scripts/acceptance/a1-5/release-readiness.mjs --no-evidence

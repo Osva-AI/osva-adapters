@@ -13,11 +13,11 @@ on:
           - "@osva-ai/adapter-artifact-azure"
           - "@osva-ai/runtime-cli-sidecar"
       expected_version:
-        description: Version in package.json (must match; e.g. 0.1.0)
+        description: Version in package.json (must match; e.g. 0.1.2)
         required: true
         type: string
       dist_tag:
-        description: npm dist-tag (rc recommended for first 0.1.0)
+        description: npm dist-tag applied only on real publish (rc recommended)
         required: true
         default: rc
         type: choice
@@ -32,39 +32,67 @@ on:
         required: false
         default: ""
         type: string
+      confirm_real_publish:
+        description: >-
+          Leave empty for preflight (default). Type PUBLISH to upload after
+          preflight passes and npm-publish environment approval.
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
   id-token: write
 
 jobs:
-  publish:
-    name: Publish ${{ inputs.package }}@${{ inputs.expected_version }}
+  plan:
+    name: Validate inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      package_dir: ${{ steps.plan.outputs.package_dir }}
+      real_publish: ${{ steps.plan.outputs.real_publish }}
+      preflight_only: ${{ steps.plan.outputs.preflight_only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Validate workflow inputs (no shell interpolation)
+        id: plan
+        env:
+          INPUT_PACKAGE: ${{ inputs.package }}
+          INPUT_EXPECTED_VERSION: ${{ inputs.expected_version }}
+          INPUT_DIST_TAG: ${{ inputs.dist_tag }}
+          INPUT_CONFIRM_LATEST: ${{ inputs.confirm_latest }}
+          INPUT_CONFIRM_REAL_PUBLISH: ${{ inputs.confirm_real_publish }}
+        run: node scripts/acceptance/lib/validate-publish-inputs.mjs --github-output "$GITHUB_OUTPUT"
+
+  preflight:
+    name: Preflight ${{ inputs.package }}@${{ inputs.expected_version }}
+    needs: plan
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: npm-publish
     steps:
       - name: Ref eligibility (immutable release refs only)
         run: |
           ref="${{ github.ref }}"
           if [[ "$ref" == "refs/heads/main" ]]; then
-            echo "Publishing from main branch tip at ${{ github.sha }}"
+            echo "Preflight from main branch tip at ${{ github.sha }}"
             exit 0
           fi
           if [[ "$ref" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
-            echo "Publishing from semver tag at ${{ github.sha }}"
+            echo "Preflight from semver tag at ${{ github.sha }}"
             exit 0
           fi
           echo "Ref not eligible: $ref"
           echo "Run this workflow only from branch main or a semver tag refs/tags/v*."
           exit 1
-
-      - name: Dist-tag policy
-        run: |
-          if [[ "${{ inputs.dist_tag }}" == "latest" && "${{ inputs.confirm_latest }}" != "YES" ]]; then
-            echo "dist-tag latest requires confirm_latest input YES."
-            exit 1
-          fi
 
       - name: Tag name must match expected_version
         if: startsWith(github.ref, 'refs/tags/')
@@ -93,35 +121,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
-
-      - name: Map package to directory
-        id: map
-        run: |
-          case "${{ inputs.package }}" in
-            "@osva-ai/adapter-artifact-memory")
-              echo "dir=packages/artifact-memory" >> "$GITHUB_OUTPUT"
-              ;;
-            "@osva-ai/adapter-artifact-azure")
-              echo "dir=packages/artifact-azure" >> "$GITHUB_OUTPUT"
-              ;;
-            "@osva-ai/runtime-cli-sidecar")
-              echo "dir=packages/runtime-cli-sidecar" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "Unknown package"
-              exit 1
-              ;;
-          esac
-
-      - name: Verify workspace version
-        working-directory: ${{ steps.map.outputs.dir }}
-        run: |
-          actual=$(node -p "JSON.parse(require('node:fs').readFileSync('package.json','utf8')).version")
-          if [[ "$actual" != "${{ inputs.expected_version }}" ]]; then
-            echo "package.json version is $actual, expected ${{ inputs.expected_version }}"
-            exit 1
-          fi
 
       - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
@@ -143,23 +142,104 @@ jobs:
           code=$?
           set -e
           if [[ $code -eq 0 ]]; then
-            echo "Version already published."
+            echo "Version already published (immutable); aborting."
             exit 1
           fi
           echo "Version not published yet."
 
-      - name: Publish (OIDC trusted publishing or NPM_TOKEN)
-        working-directory: ${{ steps.map.outputs.dir }}
+      - name: npm publish dry-run (no upload, no dist-tag change)
+        working-directory: ${{ needs.plan.outputs.package_dir }}
+        run: npm publish --dry-run --access public
+
+      - name: Pack release tarball artifact
+        working-directory: ${{ needs.plan.outputs.package_dir }}
+        run: |
+          mkdir -p "${RUNNER_TEMP}/release-pack"
+          pnpm pack --pack-destination "${RUNNER_TEMP}/release-pack"
+          ls -la "${RUNNER_TEMP}/release-pack"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-release-tarball
+          path: ${{ runner.temp }}/release-pack/*.tgz
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: Preflight summary
+        run: |
+          if [[ "${{ needs.plan.outputs.real_publish }}" == "true" ]]; then
+            echo "Preflight passed. Awaiting npm-publish environment approval for upload."
+          else
+            echo "Preflight-only run complete (default). Re-run with confirm_real_publish=PUBLISH to upload."
+          fi
+
+  publish:
+    name: Publish ${{ inputs.package }}@${{ inputs.expected_version }}
+    needs: [plan, preflight]
+    if: needs.plan.outputs.real_publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: npm-publish
+    steps:
+      - name: Ref eligibility (immutable release refs only)
+        run: |
+          ref="${{ github.ref }}"
+          if [[ "$ref" == "refs/heads/main" ]]; then
+            echo "Publishing from main branch tip at ${{ github.sha }}"
+            exit 0
+          fi
+          if [[ "$ref" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "Publishing from semver tag at ${{ github.sha }}"
+            exit 0
+          fi
+          echo "Ref not eligible: $ref"
+          exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Verify checked-out commit
+        run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: npm-release-tarball
+          path: ${{ runner.temp }}/release-pack
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Confirm version not on registry
+        run: |
+          set +e
+          npm view "${{ inputs.package }}@${{ inputs.expected_version }}" version >/dev/null 2>&1
+          code=$?
+          set -e
+          if [[ $code -eq 0 ]]; then
+            echo "Version already published."
+            exit 1
+          fi
+
+      - name: Publish tarball (OIDC trusted publishing or NPM_TOKEN)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
+          tgz=$(find "${RUNNER_TEMP}/release-pack" -maxdepth 1 -name '*.tgz' -print -quit)
+          if [[ -z "$tgz" ]]; then
+            echo "Release tarball missing."
+            exit 1
+          fi
           if [[ -n "${NODE_AUTH_TOKEN:-}" ]]; then
-            npm publish --access public --provenance --tag "${{ inputs.dist_tag }}"
+            npm publish "$tgz" --access public --provenance --tag "${{ inputs.dist_tag }}"
           else
             echo "No NPM_TOKEN secret; attempting npm trusted publishing (OIDC)."
             echo "Configure trusted publisher on npmjs.com for this package and workflow publish-package.yml."
-            npm publish --access public --tag "${{ inputs.dist_tag }}"
+            npm publish "$tgz" --access public --tag "${{ inputs.dist_tag }}"
           fi
 
       - name: Post-publication registry check
