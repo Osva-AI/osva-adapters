@@ -48,11 +48,13 @@ Packages are versioned **independently** on npm unless a release note documents 
 
 ## npm publication
 
-| Package                            | Registry (checked **2026-11-05**) | Version in this repo (M19)               |
-| ---------------------------------- | --------------------------------- | ---------------------------------------- |
-| `@osva-ai/adapter-artifact-memory` | Published **`0.1.0`**             | **`0.1.2`** (`@osva-ai/contracts@1.1.4`) |
-| `@osva-ai/adapter-artifact-azure`  | Published **`0.1.0`**             | **`0.1.2`** (`@osva-ai/contracts@1.1.4`) |
-| `@osva-ai/runtime-cli-sidecar`     | **404** (never published)         | **`0.1.0`**                              |
+| Package                            | Registry (verified **2026-11-06**) | Version in this repo (M19)               |
+| ---------------------------------- | ---------------------------------- | ---------------------------------------- |
+| `@osva-ai/adapter-artifact-memory` | **`0.1.2`** (`latest`, `rc`)       | **`0.1.2`** (`@osva-ai/contracts@1.1.4`) |
+| `@osva-ai/adapter-artifact-azure`  | **`0.1.2`** (`latest`, `rc`)       | **`0.1.2`** (`@osva-ai/contracts@1.1.4`) |
+| `@osva-ai/runtime-cli-sidecar`     | **`0.1.0`**                        | **`0.1.0`**                              |
+
+Clean **`npm install`** from the public registry succeeded for all three packages (M19 operator evidence). Post-publish workflow verification uses bounded registry polling — see [MAINTAINER_RELEASE.md](./docs/release/MAINTAINER_RELEASE.md).
 
 Pin adapters with explicit contracts in deployment images:
 

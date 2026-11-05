@@ -30,7 +30,8 @@
     "test:release-readiness:a2-6": "node scripts/acceptance/a2-6/release-readiness.mjs --require-a25",
     "verify:a2-5": "pnpm --filter @osva-ai/runtime-cli-sidecar lint && pnpm --filter @osva-ai/runtime-cli-sidecar typecheck && pnpm --filter @osva-ai/runtime-cli-sidecar build && pnpm --filter @osva-ai/runtime-cli-sidecar test && pnpm test:pack-consumer:a2-2-4 && pnpm test:acceptance:a2-5",
     "verify:a2-6": "pnpm verify:a2-5 && pnpm test:release-readiness:a2-6",
-    "test:publish-workflow-safety": "node scripts/acceptance/lib/publish-workflow-safety.test.mjs"
+    "test:publish-workflow-safety": "node scripts/acceptance/lib/publish-workflow-safety.test.mjs",
+    "test:wait-for-npm-version": "node scripts/acceptance/lib/wait-for-npm-version.test.mjs"
   },
   "devDependencies": {
     "@types/node": "catalog:",

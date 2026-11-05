@@ -61,6 +61,18 @@ assert.match(
   /validate-publish-inputs\.mjs/,
   "workflow must validate inputs via node script",
 );
+const publishSection =
+  workflow.slice(workflow.indexOf("\n  publish:")) || workflow;
+assert.match(
+  publishSection,
+  /wait-for-npm-version\.mjs/,
+  "publish job must poll registry visibility after upload",
+);
+assert.doesNotMatch(
+  publishSection,
+  /npm publish[\s\S]*wait-for-npm-version[\s\S]*npm publish/,
+  "publish job must not auto-retry npm publish after verification",
+);
 
 assert.doesNotMatch(
   preflightJob,

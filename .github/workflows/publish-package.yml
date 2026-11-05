@@ -242,11 +242,8 @@ jobs:
             npm publish "$tgz" --access public --tag "${{ inputs.dist_tag }}"
           fi
 
-      - name: Post-publication registry check
+      - name: Post-publication registry check (bounded poll)
         run: |
-          published=$(npm view "${{ inputs.package }}@${{ inputs.expected_version }}" version)
-          if [[ "$published" != "${{ inputs.expected_version }}" ]]; then
-            echo "Registry verification failed."
-            exit 1
-          fi
-          echo "Registry reports version $published"
+          node scripts/acceptance/lib/wait-for-npm-version.mjs \
+            "${{ inputs.package }}" \
+            "${{ inputs.expected_version }}"
